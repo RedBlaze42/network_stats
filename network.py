@@ -6,8 +6,8 @@ from math import log
 import pickle, os
 from os.path import join
 
-path = "output_authors_december"
-relation_type = "authors" #authors, citations
+path = "output_citations_december"
+relation_type = "citations" #authors, citations
 
 sub_number = 1000
 connections_number = 4
@@ -18,18 +18,21 @@ blacklist = ["AskReddit"]
 
 #Import
 print("Import...")
+with open(join(path, "subreddits_ids.json"), "r") as f:
+    ids_sub = json.load(f)
+    sub_ids = dict()
+    for sub, sub_id in ids_sub.items():
+        sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
+
 with open(join(path, "subreddits.json"), "r") as f:
     subs = json.load(f)
-
-with open(join(path, "subreddits_ids.json"), "r") as f:
-    sub_ids = json.load(f)
-    sub_ids = {str(sub_id): sub for sub, sub_id in sub_ids.items()}
+    subs = {sub_id: value for sub_id, value in subs.items() if sub_ids[sub_id] not in blacklist}
 
 #Sub filter
 print("Filtering...")
 subs_sorted = sorted(subs.keys(), key=lambda x: subs.get(x), reverse=True)
 sub_number = min(len(subs_sorted),sub_number+1)
-top = {sub_ids[sub_id] : subs[sub_id] for sub_id in subs_sorted[:sub_number] if sub_ids[sub_id]}
+top = {sub_ids[sub_id] : subs[sub_id] for sub_id in subs_sorted[:sub_number]}
 
 del subs
 
@@ -38,7 +41,7 @@ top_subs_name = sorted(top.keys())
 #Relations
 print("Relations...")
 if not os.path.exists(join(path, "relations.pickle")):
-    relations = { (sub_1, sub_2) : 0 for sub_1 in top_subs_name for sub_2 in top_subs_name if sub_1 < sub_2}
+    relations = dict()#{ (sub_1, sub_2) : 0 for sub_1 in top_subs_name for sub_2 in top_subs_name if sub_1 < sub_2}
     
     if relation_type == "authors":
 
@@ -57,6 +60,7 @@ if not os.path.exists(join(path, "relations.pickle")):
             for sub_1 in author_subs_name:
                 for sub_2 in author_subs_name:
                     if sub_1 >= sub_2: continue
+                    if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
                     
                     #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
                     #(author_data[sub_1]+author_data[sub_2])/author_coms
@@ -70,10 +74,15 @@ if not os.path.exists(join(path, "relations.pickle")):
 
         for from_sub, to_sub in tqdm(citations):
             if from_sub == to_sub: continue
-            from_sub, to_sub = sub_ids[from_sub], sub_ids[to_sub]
+            from_sub, to_sub = str(from_sub), str(to_sub)
             
+            from_sub, to_sub = sub_ids[from_sub], sub_ids[to_sub]
+
+            if from_sub not in top_subs_name or to_sub not in top_subs_name: continue
+
             sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
 
+            if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
             relations[ (sub_1, sub_2) ] += 1
     
     with open(join(path, "relations.pickle"), "wb") as f:
@@ -81,13 +90,6 @@ if not os.path.exists(join(path, "relations.pickle")):
 else:
     with open(join(path, "relations.pickle"), "rb") as f:
         relations = pickle.load(f)
-
-#Banning
-print("Banning...")
-relations = {key: value for key, value in relations.items() if key[0] not in blacklist and key[1] not in blacklist}
-top_subs_name = [sub_name for sub_name in top_subs_name if sub_name not in blacklist]
-top = {key: value for key, value in top.items() if key not in blacklist}
-
 
 #Edge filtering
 print("Edge filtering...")
@@ -97,6 +99,7 @@ for sub_1 in top_subs_name:
     node_relations[sub_1]=dict()
     for sub_2 in top_subs_name:
         if sub_1 == sub_2: continue
+        if (min(sub_1, sub_2), max(sub_1, sub_2)) not in relations.keys(): continue
         node_relations[sub_1][sub_2] = relations[min(sub_1, sub_2), max(sub_1, sub_2)]
     
     top_node_relation = sorted(node_relations[sub_1].keys(), key = lambda x: node_relations[sub_1][x], reverse = True)[:connections_number]
@@ -167,7 +170,7 @@ if primary_colors:
 
     for sub in top_subs_name:
         for edge_sub, weight in top_edges.items():
-            if sub in edge_sub:
+            if sub in edge_sub and edge_sub in relations.keys():
                 top_connected_nodes[sub] += relations[edge_sub]
 
     top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
@@ -202,7 +205,7 @@ if primary_colors:
             
             node_colors = dict()
             for connected_node in connected_nodes:
-                if connected_node in selected_nodes:
+                if connected_node in selected_nodes and (min(node, connected_node), max(node, connected_node)) in relations.keys():
                     color = top_colors[selected_nodes.index(connected_node)]
                     node_colors[color] = relations[min(node, connected_node), max(node, connected_node)]
 
