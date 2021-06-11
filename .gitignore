@@ -1,0 +1,4 @@
+*.zst
+output*
+*.pickle
+*.json
