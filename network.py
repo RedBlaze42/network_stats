@@ -16,6 +16,8 @@ secondary_colors = True
 
 blacklist = ["AskReddit"]
 
+top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
+
 #Import
 print("Import...")
 with open(join(path, "subreddits_ids.json"), "r") as f:
@@ -174,8 +176,6 @@ if primary_colors:
                 top_connected_nodes[sub] += relations[edge_sub]
 
     top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
-
-    top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
 
     selected_nodes = list()
     for node, links in top_connected_nodes:
