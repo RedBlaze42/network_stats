@@ -109,7 +109,7 @@ for sub_1 in top_subs_name:
 
 #Final network
 net = Network('920px', '1900px', bgcolor="#000000", font_color="#ffffff")
-net.add_nodes(list(top.keys()), value = list(top.values()), color = ["#ffffff" for i in range(len(top))])#default color 97c2fc
+net.add_nodes(list(top.keys()), value = list(top.values()), color = ["#ffffff" if primary_colors else "97c2fc" for i in range(len(top))])#default color 97c2fc
 max_weight = max([weight for sub, weight in relations.items()])
 edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in top_edges.items() if weight > 0]
 net.add_edges(edges)
