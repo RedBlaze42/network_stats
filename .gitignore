@@ -2,3 +2,4 @@
 output*
 *.pickle
 *.json
+test.py
