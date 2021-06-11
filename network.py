@@ -14,6 +14,8 @@ connections_number = 5
 primary_colors = True
 secondary_colors = True
 
+filter_explicit = True 
+
 blacklist = ["AskReddit"]
 
 top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
@@ -29,6 +31,12 @@ with open(join(path, "subreddits_ids.json"), "r") as f:
 with open(join(path, "subreddits.json"), "r") as f:
     subs = json.load(f)
     subs = {sub_id: value for sub_id, value in subs.items() if sub_ids[sub_id] not in blacklist}
+
+    if filter_explicit:
+        with open("explicit_subs.json", "r") as f:
+            explicit_subs = json.load(f)
+
+        subs = {sub_id: value for sub_id, value in subs.items() if sub_ids[sub_id] not in explicit_subs}
 
 #Sub filter
 print("Filtering...")
