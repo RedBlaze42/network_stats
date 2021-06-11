@@ -2,15 +2,15 @@ import json
 from re import I
 from pyvis.network import Network
 from tqdm import tqdm
-from math import log
+from math import log, exp
 import pickle, os
 from os.path import join
 
-path = "output_citations_december"
-relation_type = "citations" #authors, citations
+path = "output_comments_december"
+relation_type = "authors" #authors, citations
 
 sub_number = 1000
-connections_number = 4
+connections_number = 5
 primary_colors = True
 secondary_colors = True
 
@@ -109,13 +109,29 @@ for sub_1 in top_subs_name:
     for sub_2 in top_node_relation:
         top_edges[(min(sub_1, sub_2), max(sub_1, sub_2))] = relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
 
+def get_connected_nodes(node, edge_list):
+    connected_nodes = list()
+    for sub, weight in edge_list.items():
+        if node in sub:
+            if sub[0] == node:
+                connected_nodes.append(sub[1])
+            else:
+                connected_nodes.append(sub[0])
+    
+    return connected_nodes
+
 #Final network
+print("Network...")
 net = Network('920px', '1900px', bgcolor="#000000", font_color="#ffffff")
-net.add_nodes(list(top.keys()), value = list(top.values()), color = ["#ffffff" if primary_colors else "97c2fc" for i in range(len(top))])#default color 97c2fc
 max_weight = max([weight for sub, weight in relations.items()])
 edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in top_edges.items() if weight > 0]
-net.add_edges(edges)
 
+default_color = "#ffffff" if primary_colors else "97c2fc"
+max_comments = max(top.values())
+for node, value in top.items():
+    net.add_node(node, size = (exp(value/max_comments)-1)*100, color = default_color, mass = len(get_connected_nodes(node, top_edges)))
+
+net.add_edges(edges)
 
 #Options
 
@@ -124,7 +140,7 @@ net.add_edges(edges)
 net.options["physics"].use_barnes_hut({
             "gravity": -31000,
             "central_gravity": 1,
-            "spring_length": 300,
+            "spring_length": 200,
             "spring_strength": 0.04,
             "damping": 0.2,
             "overlap": 0.1,
@@ -139,23 +155,13 @@ net.options.__dict__["nodes"] = {
         }
     },
     "font": {
+        "size" : 32,
         "strokeWidth": 5,
         "strokeColor": "rgba(0,0,0,0.7)"
     }
 }
 
 #Colors
-def get_connected_nodes(node, edge_list):
-    connected_nodes = list()
-    for sub, weight in edge_list.items():
-        if node in sub:
-            if sub[0] == node:
-                connected_nodes.append(sub[1])
-            else:
-                connected_nodes.append(sub[0])
-    
-    return connected_nodes
-
 def mix_colors(d):
     d_items = sorted(d.items())
     tot_weight = sum(d.values())
@@ -211,6 +217,8 @@ if primary_colors:
 
             node_colors["ffffff"] = max(node_colors.values()) if len(node_colors) > 0 else 1
             net.get_node(node)["color"] = "#{}".format(mix_colors(node_colors))
+
+net.get_node(node)
 
 print("Output...")
 net.show(join(path, "output.html"))
