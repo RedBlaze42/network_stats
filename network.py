@@ -168,7 +168,7 @@ if primary_colors:
     for sub in top_subs_name:
         for edge_sub, weight in top_edges.items():
             if sub in edge_sub:
-                top_connected_nodes[sub] += 1
+                top_connected_nodes[sub] += relations[edge_sub]
 
     top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
 
@@ -197,18 +197,17 @@ if primary_colors:
     if secondary_colors:
         print("Secondary colors...")
         for node in top_subs_name:
+            if node in selected_nodes: continue
             connected_nodes = get_connected_nodes(node, top_edges)
             
             node_colors = dict()
-            node_colors["ffffff"] = 0
             for connected_node in connected_nodes:
                 if connected_node in selected_nodes:
                     color = top_colors[selected_nodes.index(connected_node)]
                     node_colors[color] = relations[min(node, connected_node), max(node, connected_node)]
-                else:
-                    node_colors["ffffff"] += relations[min(node, connected_node), max(node, connected_node)]
 
-            net.get_node(node)["ffffff"] = "#{}".format(mix_colors(node_colors))
+            node_colors["ffffff"] = max(node_colors.values()) if len(node_colors) > 0 else 1
+            net.get_node(node)["color"] = "#{}".format(mix_colors(node_colors))
 
 print("Output...")
 net.show(join(path, "output.html"))
