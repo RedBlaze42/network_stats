@@ -11,9 +11,13 @@ relation_type = "authors" #authors, citations
 
 sub_number = 1000
 connections_number = 4
+primary_colors = True
+secondary_colors = True
 
 blacklist = ["AskReddit"]
 
+#Import
+print("Import...")
 with open(join(path, "subreddits.json"), "r") as f:
     subs = json.load(f)
 
@@ -22,6 +26,7 @@ with open(join(path, "subreddits_ids.json"), "r") as f:
     sub_ids = {str(sub_id): sub for sub, sub_id in sub_ids.items()}
 
 #Sub filter
+print("Filtering...")
 subs_sorted = sorted(subs.keys(), key=lambda x: subs.get(x), reverse=True)
 sub_number = min(len(subs_sorted),sub_number+1)
 top = {sub_ids[sub_id] : subs[sub_id] for sub_id in subs_sorted[:sub_number] if sub_ids[sub_id]}
@@ -31,6 +36,7 @@ del subs
 top_subs_name = sorted(top.keys())
 
 #Relations
+print("Relations...")
 if not os.path.exists(join(path, "relations.pickle")):
     relations = { (sub_1, sub_2) : 0 for sub_1 in top_subs_name for sub_2 in top_subs_name if sub_1 < sub_2}
     
@@ -77,12 +83,14 @@ else:
         relations = pickle.load(f)
 
 #Banning
+print("Banning...")
 relations = {key: value for key, value in relations.items() if key[0] not in blacklist and key[1] not in blacklist}
 top_subs_name = [sub_name for sub_name in top_subs_name if sub_name not in blacklist]
 top = {key: value for key, value in top.items() if key not in blacklist}
 
 
 #Edge filtering
+print("Edge filtering...")
 top_edges = dict()
 node_relations = dict()
 for sub_1 in top_subs_name:
@@ -97,17 +105,16 @@ for sub_1 in top_subs_name:
         top_edges[(min(sub_1, sub_2), max(sub_1, sub_2))] = relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
 
 #Final network
-net = Network('920px', '1900px')
-net.add_nodes(list(top.keys()), value = list(top.values()))
+net = Network('920px', '1900px', bgcolor="#000000", font_color="#ffffff")
+net.add_nodes(list(top.keys()), value = list(top.values()), color = ["#ffffff" for i in range(len(top))])#default color 97c2fc
 max_weight = max([weight for sub, weight in relations.items()])
 edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in top_edges.items() if weight > 0]
 net.add_edges(edges)
 
-del relations
 
 #Options
 
-#net.show_buttons(filter_=['physics',"nodes", "edges"])
+#net.show_buttons(filter_=True)
 
 net.options["physics"].use_barnes_hut({
             "gravity": -31000,
@@ -119,6 +126,7 @@ net.options["physics"].use_barnes_hut({
         })
 
 net.options.__dict__["nodes"] = {
+    "borderWidth": 3,
     "borderWidthSelected": 5,
     "color": {
         "highlight": {
@@ -127,7 +135,7 @@ net.options.__dict__["nodes"] = {
     },
     "font": {
         "strokeWidth": 5,
-        "strokeColor": "rgba(255,255,255,0.9)"
+        "strokeColor": "rgba(0,0,0,0.7)"
     }
 }
 
