@@ -131,4 +131,76 @@ net.options.__dict__["nodes"] = {
     }
 }
 
+#Colors
+def get_connected_nodes(node, edge_list):
+    connected_nodes = list()
+    for sub, weight in edge_list.items():
+        if node in sub:
+            if sub[0] == node:
+                connected_nodes.append(sub[1])
+            else:
+                connected_nodes.append(sub[0])
+    
+    return connected_nodes
+
+def mix_colors(d):
+    d_items = sorted(d.items())
+    tot_weight = sum(d.values())
+    red = int(sum([int(k[:2], 16)*v for k, v in d_items])/tot_weight)
+    green = int(sum([int(k[2:4], 16)*v for k, v in d_items])/tot_weight)
+    blue = int(sum([int(k[4:6], 16)*v for k, v in d_items])/tot_weight)
+    zpad = lambda x: x if len(x)==2 else '0' + x
+    return zpad(hex(red)[2:]) + zpad(hex(green)[2:]) + zpad(hex(blue)[2:])
+
+if primary_colors:
+    print("Primary colors...")
+    #Top nodes colors
+    top_connected_nodes = {sub: 0 for sub in top_subs_name}
+
+    for sub in top_subs_name:
+        for edge_sub, weight in top_edges.items():
+            if sub in edge_sub:
+                top_connected_nodes[sub] += 1
+
+    top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
+
+    top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
+
+    selected_nodes = list()
+    for node, links in top_connected_nodes:
+        if len(selected_nodes) == len(top_colors): break
+
+        connected_to_top_node = False
+        connected_nodes = get_connected_nodes(node, top_edges)
+        for node_edges in connected_nodes:
+            if node_edges in selected_nodes:
+                connected_to_top_node = True
+                break
+        
+        if not connected_to_top_node: selected_nodes.append(node)
+
+    for i, selected_node in enumerate(selected_nodes):
+        net.get_node(selected_node)["color"] = "#{}".format(top_colors[i])
+        for edge in net.edges:
+            if edge['from'] == selected_node or edge['to'] == selected_node:
+                edge["color"] = "#{}".format(top_colors[i])
+
+    #Secondary colors
+    if secondary_colors:
+        print("Secondary colors...")
+        for node in top_subs_name:
+            connected_nodes = get_connected_nodes(node, top_edges)
+            
+            node_colors = dict()
+            node_colors["ffffff"] = 0
+            for connected_node in connected_nodes:
+                if connected_node in selected_nodes:
+                    color = top_colors[selected_nodes.index(connected_node)]
+                    node_colors[color] = relations[min(node, connected_node), max(node, connected_node)]
+                else:
+                    node_colors["ffffff"] += relations[min(node, connected_node), max(node, connected_node)]
+
+            net.get_node(node)["ffffff"] = "#{}".format(mix_colors(node_colors))
+
+print("Output...")
 net.show(join(path, "output.html"))
