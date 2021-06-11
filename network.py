@@ -130,7 +130,8 @@ def get_connected_nodes(node, edge_list):
 
 #Final network
 print("Network...")
-net = Network('920px', '1900px', bgcolor="#000000", font_color="#ffffff")
+net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
+net.path = "template.html"
 max_weight = max([weight for sub, weight in relations.items()])
 edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in top_edges.items() if weight > 0]
 
@@ -146,13 +147,22 @@ net.add_edges(edges)
 #net.show_buttons(filter_=True)
 
 net.options["physics"].use_barnes_hut({
-            "gravity": -31000,
-            "central_gravity": 1,
-            "spring_length": 200,
-            "spring_strength": 0.04,
-            "damping": 0.2,
-            "overlap": 0.1,
-        })
+        "gravity": -31000,
+        "central_gravity": 0.1,
+        "spring_length": 200,
+        "spring_strength": 0.04,
+        "damping": 0.2,
+        "overlap": 0.1,
+    })
+
+net.options.__dict__["layout"] = {"improvedLayout": False}
+net.options.__dict__["physics"].__dict__["stabilization"] = {
+        "enabled": True,
+        "fit": True,
+        "iterations": 3000,
+        "onlyDynamicEdges": False,
+        "updateInterval": 50
+    }
 
 net.options.__dict__["nodes"] = {
     "borderWidth": 3,
@@ -229,4 +239,4 @@ if primary_colors:
 net.get_node(node)
 
 print("Output...")
-net.show(join(path, "output.html"))
+net.save_graph(join(path, "output.html"))
