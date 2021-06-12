@@ -1,4 +1,4 @@
-from treat_comments import treat_comments
+from treat_dump_file import treat_file, treat_files
 import json, os
 
 if __name__ == "__main__":
@@ -24,9 +24,9 @@ def treat_comment(comment):
 
 if __name__ == "__main__":
     
-    file_name = "RC_2019-12.zst"
+    file_name = "reddit_data/RC*.zst"
     try:
-        treat_comments(treat_comment, file_name)
+        treat_files(treat_comment, file_name)
     except KeyboardInterrupt:
         print("Arrêt...")
 
