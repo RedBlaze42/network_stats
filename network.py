@@ -6,64 +6,122 @@ from math import log, exp
 import pickle, os
 from os.path import join
 from save_pos import save_pos
+from hashlib import md5
 
-path = "output_comments_december"
-relation_type = "authors" #authors, citations
+def mix_colors(d):
+    d_items = sorted(d.items())
+    tot_weight = sum(d.values())
+    red = int(sum([int(k[:2], 16)*v for k, v in d_items])/tot_weight)
+    green = int(sum([int(k[2:4], 16)*v for k, v in d_items])/tot_weight)
+    blue = int(sum([int(k[4:6], 16)*v for k, v in d_items])/tot_weight)
+    zpad = lambda x: x if len(x)==2 else '0' + x
+    return zpad(hex(red)[2:]) + zpad(hex(green)[2:]) + zpad(hex(blue)[2:])
 
-sub_number = 2000
-connections_number = 3
-primary_colors = True
-secondary_colors = True
-filter_explicit = False 
-customized_node_colors = {"memes": "71eb34", "guns": "ffa200", "politics": "ffea00", "AmItheAsshole": "00fff7", "gonewild": "ff00d0", "pokemon": "9000ff", "nfl": "002fff", "Drugs": "5eff00", "unitedkingdom": "00a2ff", "canada": "ff0055"}
-
-blacklist = ["AskReddit"]
-
-top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
-
-#Import
-print("Import...")
-with open(join(path, "subreddits_ids.json"), "r") as f:
-    ids_sub = json.load(f)
-    sub_ids = dict()
-    for sub, sub_id in ids_sub.items():
-        sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
-
-with open(join(path, "subreddits.json"), "r") as f:
-    subs = json.load(f)
-    subs = {sub_id: value for sub_id, value in subs.items() if sub_ids[sub_id] not in blacklist}
-
-    if filter_explicit:
-        with open("explicit_subs.json", "r") as f:
-            explicit_subs = json.load(f)
-
-        subs = {sub_id: value for sub_id, value in subs.items() if sub_ids[sub_id] not in explicit_subs}
-
-#Sub filter
-print("Filtering...")
-subs_sorted = sorted(subs.keys(), key=lambda x: subs.get(x), reverse=True)
-sub_number = min(len(subs_sorted),sub_number+1)
-top = {sub_ids[sub_id] : subs[sub_id] for sub_id in subs_sorted[:sub_number]}
-
-del subs
-
-top_subs_name = sorted(top.keys())
-
-#Relations
-print("Relations...")
-if not os.path.exists(join(path, "relations.pickle")):
-    relations = dict()#{ (sub_1, sub_2) : 0 for sub_1 in top_subs_name for sub_2 in top_subs_name if sub_1 < sub_2}
+class RedditNetwork():
     
-    if relation_type == "authors":
+    #Filter specific parameters
+    blacklist = ["AskReddit"]
+    sub_number = 1000
+    filter_explicit = False
+    inverse_explicit_filter = False
 
-        with open(join(path, "authors.json"), "r") as f:
+    #Default values
+    connections_number = 4
+    primary_colors = True
+    secondary_colors = True
+    top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
+    customized_node_colors = {}
+
+    net_data = None
+    top_edges_data = None
+    relations_data = None    
+    
+    def __init__(self, input_path, config_path):
+        self.input_path = input_path
+
+        with open(config_path, "r") as f:
+            self.config = json.load(f)
+        
+        if "blacklist" in self.config.keys(): self.blacklist = self.config["blacklist"]
+        if "top_colors" in self.config.keys(): self.top_colors = self.config["top_colors"]
+        if "customized_node_colors" in self.config.keys(): self.customized_node_colors = self.config["customized_node_colors"]
+        if "sub_number" in self.config.keys(): self.sub_number = self.config["sub_number"]
+        if "primary_colors" in self.config.keys(): self.primary_colors = self.config["primary_colors"]
+        if "filter_explicit" in self.config.keys(): self.filter_explicit = self.config["filter_explicit"]
+        if "inverse_explicit_filter" in self.config.keys(): self.inverse_explicit_filter = self.config["inverse_explicit_filter"]
+        if "secondary_colors" in self.config.keys(): self.secondary_colors = self.config["secondary_colors"]
+        
+        self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter])).hexdigest()[:5]
+        print("Import...")
+        #Import sub ids
+        with open(join(input_path, "subreddits_ids.json"), "r") as f:
+            ids_sub = json.load(f)
+            self.sub_ids = dict()
+            for sub, sub_id in ids_sub.items():
+                self.sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
+
+        #Import sub values
+        with open(join(input_path, "subreddits.json"), "r") as f:
+            subs = json.load(f)
+            subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in self.blacklist}
+
+            if self.filter_explicit:
+                with open("explicit_subs.json", "r") as f:
+                    explicit_subs = json.load(f)
+
+                if not self.inverse_explicit_filter:
+                    subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in explicit_subs}
+                else:
+                    subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] in explicit_subs}
+
+        #Sub filter
+        print("Filtering...")
+        subs_sorted = sorted(subs.keys(), key=lambda x: subs.get(x), reverse=True)
+        sub_number = min(len(subs_sorted),self.sub_number+1)
+        self.top_subs = {self.sub_ids[sub_id] : subs[sub_id] for sub_id in subs_sorted[:sub_number]}
+        self.top_subs_name = sorted(self.top_subs.keys())
+
+    def get_connected_nodes(self, node, edge_list):
+        connected_nodes = list()
+        for sub, weight in edge_list.items():
+            if node in sub:
+                if sub[0] == node:
+                    connected_nodes.append(sub[1])
+                else:
+                    connected_nodes.append(sub[0])
+        
+        return connected_nodes
+
+    @property
+    def relations(self):
+        if self.relations_data is not None: return self.relations_data
+
+        print("Relations...")
+        relation_path = join(self.input_path, "relations_{}subs.pickle".format(self.filter_config_hash))
+        if os.path.exists(relation_path):
+            with open(relation_path, "rb") as f:
+                self.relations_data = pickle.load(f)
+        else:
+            if self.config["type"] == "posts":
+                self.relations_data = self.compute_relations_post()
+            elif self.config["type"] == "citations":
+                self.relations_data = self.compute_relations_citations()
+            
+            with open(relation_path, "wb") as f:
+                pickle.dump(self.relations_data, f)
+        
+        return self.relations_data
+
+    def compute_relations_post(self):
+        relations = dict()
+        with open(join(self.input_path, "authors.json"), "r") as f:
             authors = json.load(f)
 
-        print("Total messages to analyze: {:,}".format(sum([len(author) for author in authors])))
+        print("Total posts to analyze: {:,}".format(sum([len(author) for author in authors])))
 
         for author_name, author_data in tqdm(authors.items()):
             if author_name == "AutoModerator": continue
-            author_data = {sub_ids[sub_id]:value for sub_id, value in author_data.items() if sub_ids[sub_id] in top_subs_name}
+            author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
 
             author_coms = sum(author_data.values())
             author_subs_name = sorted(author_data.keys())
@@ -76,10 +134,12 @@ if not os.path.exists(join(path, "relations.pickle")):
                     #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
                     #(author_data[sub_1]+author_data[sub_2])/author_coms
                     relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
-        del authors #Free ram
-    elif relation_type == "citations":
-        
-        with open(join(path, "relations.json"), "r") as f:
+
+        return relations
+
+    def compute_relations_citations(self):
+        relations = dict()
+        with open(join(self.input_path, "relations.json"), "r") as f:
             citations = json.load(f)
 
         print("Total citations to analyze: {:,}".format(len(citations)))
@@ -88,167 +148,153 @@ if not os.path.exists(join(path, "relations.pickle")):
             if from_sub == to_sub: continue
             from_sub, to_sub = str(from_sub), str(to_sub)
             
-            from_sub, to_sub = sub_ids[from_sub], sub_ids[to_sub]
+            from_sub, to_sub = self.sub_ids[from_sub], self.sub_ids[to_sub]
 
-            if from_sub not in top_subs_name or to_sub not in top_subs_name: continue
+            if from_sub not in self.top_subs_name or to_sub not in self.top_subs_name: continue
 
             sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
 
             if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
             relations[ (sub_1, sub_2) ] += 1
 
-        del citations
+        return relations
 
-    with open(join(path, "relations.pickle"), "wb") as f:
-        pickle.dump(relations, f)
-else:
-    with open(join(path, "relations.pickle"), "rb") as f:
-        relations = pickle.load(f)
+    @property
+    def top_edges(self):
+        if self.top_edges_data is not None: return self.top_edges_data
 
-#Edge filtering
-print("Edge filtering...")
-top_edges = dict()
-node_relations = dict()
-for sub_1 in top_subs_name:
-    node_relations[sub_1]=dict()
-    for sub_2 in top_subs_name:
-        if sub_1 == sub_2: continue
-        if (min(sub_1, sub_2), max(sub_1, sub_2)) not in relations.keys(): continue
-        node_relations[sub_1][sub_2] = relations[min(sub_1, sub_2), max(sub_1, sub_2)]
-    
-    top_node_relation = sorted(node_relations[sub_1].keys(), key = lambda x: node_relations[sub_1][x], reverse = True)[:connections_number]
-    
-    for sub_2 in top_node_relation:
-        top_edges[(min(sub_1, sub_2), max(sub_1, sub_2))] = relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
-
-def get_connected_nodes(node, edge_list):
-    connected_nodes = list()
-    for sub, weight in edge_list.items():
-        if node in sub:
-            if sub[0] == node:
-                connected_nodes.append(sub[1])
-            else:
-                connected_nodes.append(sub[0])
-    
-    return connected_nodes
-
-#Final network
-print("Network...")
-net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
-net.path = "template.html"
-max_weight = max([weight for sub, weight in relations.items()])
-edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in top_edges.items() if weight > 0]
-
-default_color = "#ffffff" if primary_colors else "97c2fc"
-max_comments = max(top.values())
-for node, value in top.items():
-    net.add_node(node, size = (exp(value/max_comments)-1)*100, color = default_color, mass = len(get_connected_nodes(node, top_edges)))
-
-net.add_edges(edges)
-
-#Options
-
-#net.show_buttons(filter_=True)
-
-net.options["physics"].use_barnes_hut({
-        "gravity": -31000,
-        "central_gravity": 0.1,
-        "spring_length": 200,
-        "spring_strength": 0.04,
-        "damping": 0.2,
-        "overlap": 0.1,
-    })
-
-net.options.__dict__["layout"] = {"improvedLayout": False}
-net.options.__dict__["physics"].__dict__["stabilization"] = {
-        "enabled": True,
-        "fit": True,
-        "iterations": 3000,
-        "onlyDynamicEdges": False,
-        "updateInterval": 50
-    }
-
-net.options.__dict__["nodes"] = {
-    "borderWidth": 3,
-    "borderWidthSelected": 5,
-    "color": {
-        "highlight": {
-            "border": "rgba(255,0,0,1)"
-        }
-    },
-    "font": {
-        "size" : 32,
-        "strokeWidth": 5,
-        "strokeColor": "rgba(0,0,0,0.7)"
-    }
-}
-
-#Colors
-def mix_colors(d):
-    d_items = sorted(d.items())
-    tot_weight = sum(d.values())
-    red = int(sum([int(k[:2], 16)*v for k, v in d_items])/tot_weight)
-    green = int(sum([int(k[2:4], 16)*v for k, v in d_items])/tot_weight)
-    blue = int(sum([int(k[4:6], 16)*v for k, v in d_items])/tot_weight)
-    zpad = lambda x: x if len(x)==2 else '0' + x
-    return zpad(hex(red)[2:]) + zpad(hex(green)[2:]) + zpad(hex(blue)[2:])
-
-if primary_colors:
-    print("Primary colors...")
-
-    primary_nodes = dict()
-    #Top nodes colors
-    if len(customized_node_colors) == 0:
-        top_connected_nodes = {sub: 0 for sub in top_subs_name}
-
-        for sub in top_subs_name:
-            for edge_sub, weight in top_edges.items():
-                if sub in edge_sub and edge_sub in relations.keys():
-                    top_connected_nodes[sub] += relations[edge_sub]
-
-        top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
-
-        for node, links in top_connected_nodes:
-            if len(primary_nodes) == len(top_colors): break
-
-            connected_to_top_node = False
-            connected_nodes = get_connected_nodes(node, top_edges)
-            for node_edges in connected_nodes:
-                if node_edges in primary_nodes.keys():
-                    connected_to_top_node = True
-                    break
+        print("Edge filtering...")
+        self.top_edges_data = dict()
+        node_relations = dict()
+        for sub_1 in self.top_subs_name:
+            node_relations[sub_1]=dict()
+            for sub_2 in self.top_subs_name:
+                if sub_1 == sub_2: continue
+                if (min(sub_1, sub_2), max(sub_1, sub_2)) not in self.relations.keys(): continue
+                node_relations[sub_1][sub_2] = self.relations[min(sub_1, sub_2), max(sub_1, sub_2)]
             
-            if not connected_to_top_node: primary_nodes[node] = top_colors[len(primary_nodes)]
-    else:
-        primary_nodes = customized_node_colors
+            top_node_relation = sorted(node_relations[sub_1].keys(), key = lambda x: node_relations[sub_1][x], reverse = True)[:self.connections_number]
+            
+            for sub_2 in top_node_relation:
+                self.top_edges_data[(min(sub_1, sub_2), max(sub_1, sub_2))] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
+        
+        return self.top_edges_data
 
-    #Color nodes and edges
-    for selected_node, color in primary_nodes.items():
-        net.get_node(selected_node)["color"] = "#{}".format(color)
-        for edge in net.edges:
-            if edge['from'] == selected_node or edge['to'] == selected_node:
-                edge["color"] = "#{}".format(color)
+    @property
+    def net(self):
+        if self.net_data is not None: return self.net_data
+        print("Network...")
+        
+        self.net_data = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
+        self.net_data.path = "template.html"
+        max_weight = max([weight for sub, weight in self.relations.items()])
+        edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in self.top_edges_data.items() if weight > 0]
 
-    #Secondary colors
-    if secondary_colors:
+        default_color = "#ffffff" if self.primary_colors else "97c2fc"
+        max_comments = max(self.top_subs.values())
+        for node, value in self.top_subs.items():
+            self.net_data.add_node(node, size = (exp(value/max_comments)-1)*100, color = default_color, mass = len(self.get_connected_nodes(node, self.top_edges_data)))
+
+        self.net_data.add_edges(edges)
+
+        self.net_data.options["physics"].use_barnes_hut({
+                "gravity": -31000,
+                "central_gravity": 0.1,
+                "spring_length": 200,
+                "spring_strength": 0.04,
+                "damping": 0.2,
+                "overlap": 0.1,
+            })
+
+        self.net_data.options.__dict__["layout"] = {"improvedLayout": False}
+        self.net_data.options.__dict__["physics"].__dict__["stabilization"] = {
+                "enabled": True,
+                "fit": True,
+                "iterations": 3000,
+                "onlyDynamicEdges": False,
+                "updateInterval": 50
+            }
+
+        self.net_data.options.__dict__["nodes"] = {
+            "borderWidth": 3,
+            "borderWidthSelected": 5,
+            "color": {
+                "highlight": {
+                    "border": "rgba(255,0,0,1)"
+                }
+            },
+            "font": {
+                "size" : 32,
+                "strokeWidth": 5,
+                "strokeColor": "rgba(0,0,0,0.7)"
+            }
+        }
+        return self.net_data
+
+    def set_primary_colors(self):
+        print("Primary colors...")
+        self.primary_nodes = dict()
+        if len(self.customized_node_colors) == 0:
+            top_connected_nodes = {sub: 0 for sub in self.top_subs_name}
+
+            for sub in self.top_subs_name:
+                for edge_sub, weight in self.top_edges_data.items():
+                    if sub in edge_sub and edge_sub in self.relations.keys():
+                        top_connected_nodes[sub] += self.relations[edge_sub]
+
+            top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
+
+            for node, links in top_connected_nodes:
+                if len(self.primary_nodes) == len(self.top_colors): break
+
+                connected_to_top_node = False
+                connected_nodes = self.get_connected_nodes(node, self.top_edges_data)
+                for node_edges in connected_nodes:
+                    if node_edges in self.primary_nodes.keys():
+                        connected_to_top_node = True
+                        break
+                
+                if not connected_to_top_node: self.primary_nodes[node] = self.top_colors[len(self.primary_nodes)]
+        else:
+            self.primary_nodes = self.customized_node_colors
+
+        #Color nodes and edges
+        for selected_node, color in self.primary_nodes.items():
+            if selected_node not in self.net_data.node_ids: continue
+            self.net_data.get_node(selected_node)["color"] = "#{}".format(color)
+            for edge in self.net_data.edges:
+                if edge['from'] == selected_node or edge['to'] == selected_node:
+                    edge["color"] = "#{}".format(color)
+    
+    def set_secondary_color(self):
         print("Secondary colors...")
-        for node in top_subs_name:
-            if node in primary_nodes.keys(): continue
-            connected_nodes = get_connected_nodes(node, top_edges)
+        for node in self.top_subs_name:
+            if node in self.primary_nodes.keys(): continue
+            connected_nodes = self.get_connected_nodes(node, self.top_edges_data)
             
             node_colors = dict()
             for connected_node in connected_nodes:
-                if connected_node in primary_nodes.keys() and (min(node, connected_node), max(node, connected_node)) in relations.keys():
-                    color = primary_nodes[connected_node]
-                    node_colors[color] = relations[min(node, connected_node), max(node, connected_node)]
+                if connected_node in self.primary_nodes.keys() and (min(node, connected_node), max(node, connected_node)) in self.relations.keys():
+                    color = self.primary_nodes[connected_node]
+                    node_colors[color] = self.relations[min(node, connected_node), max(node, connected_node)]
 
             node_colors["ffffff"] = max(node_colors.values()) if len(node_colors) > 0 else 1
-            net.get_node(node)["color"] = "#{}".format(mix_colors(node_colors))
+            self.net_data.get_node(node)["color"] = "#{}".format(mix_colors(node_colors))
 
-net.get_node(node)
+    def export_network(self, output_path):
+        self.relations
+        self.top_edges
+        self.net
 
-print("Output...")
-html_path = join(path, "output.html")
-net.save_graph(html_path)
+        if self.primary_colors:
+            self.set_primary_colors()
+            
+            if self.secondary_colors:
+                self.set_secondary_color()
 
-save_pos(html_path)
+        self.net.save_graph(output_path)
+
+
+if __name__ == "__main__":
+    net = RedditNetwork("output_comments_december")
+    net.export_network("test.html")
