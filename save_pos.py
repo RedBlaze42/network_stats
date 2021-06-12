@@ -2,12 +2,16 @@ from selenium import webdriver
 import os
 from time import sleep
 
+iterations = 5000
+
 def save_pos(file_path):
     with open(file_path, "r") as f:
         html = f.read()
 
+    if "//POSITION_STORED" in html: return None
+
     previous_iterations = html.split('"iterations": ')[1].split("\n")[0].replace(",","")
-    html = html.replace('"iterations": {}'.format(previous_iterations), '"iterations": 4000')
+    html = html.replace('"iterations": {}'.format(previous_iterations), '"iterations": {}'.format(iterations))
 
     with open(file_path, "w") as f:
         f.write(html)
@@ -59,18 +63,19 @@ def save_pos(file_path):
     #            "enabled": true""",""""stabilization": {
     #            "enabled": false""")
 
-    html = html.replace('"iterations": 4000'.format(previous_iterations), '"iterations": 0')
+    html = html.replace('"iterations": {}'.format(iterations), '"iterations": 0')
 
 
     html = html.replace("""<div id="loadingBar">
-        <div class="outerBorder">
-        <div id="text">
-            0%
-        </div>
-        <div id="border">
-            <div id="bar"></div>
-        </div>
-        </div>""", "")
+    <div class="outerBorder">
+      <div id="text">
+        0%
+      </div>
+      <div id="border">
+        <div id="bar"></div>
+      </div>
+    </div>
+  </div>""", "")
 
     with open(file_path, "w") as f:
         f.write(html)
