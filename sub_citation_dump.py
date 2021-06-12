@@ -1,4 +1,4 @@
-from treat_comments import treat_comments
+from treat_comments import treat_file
 import re, os, json
 
 pattern = re.compile(r'r\/([a-zA-Z_0-9]+)')
@@ -6,6 +6,7 @@ pattern = re.compile(r'r\/([a-zA-Z_0-9]+)')
 if __name__ == "__main__":
     max_sub_id = 0
     subs_ids = dict()
+    subs = dict()
     relations = list()
 
 def get_sub_id(subreddit):
@@ -23,13 +24,16 @@ def treat_comment_regex(comment):
     sub_id = get_sub_id(comment["subreddit"])
     results = re.findall(pattern, comment["body"])
 
+    if sub_id not in subs.keys(): subs[sub_id] = 1
+
     for result in set(results):
+        subs[sub_id] += 1
         relations.append( (sub_id, get_sub_id(result)) )
         
 if __name__ == "__main__":
     file_name = "RC_2019-12.zst"
     try:
-        treat_comments(treat_comment_regex, file_name)
+        treat_file(treat_comment_regex, file_name)
     except KeyboardInterrupt:
         print("Arrêt...")
 
@@ -37,6 +41,9 @@ if __name__ == "__main__":
 
     with open("output/relations.json","w") as f:
         json.dump(relations, f)
+
+    with open("output/subreddits.json","w") as f:
+        json.dump(subs, f)
 
     with open("output/subreddits_ids.json","w") as f:
         json.dump(subs_ids, f)
