@@ -76,6 +76,7 @@ if not os.path.exists(join(path, "relations.pickle")):
                     #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
                     #(author_data[sub_1]+author_data[sub_2])/author_coms
                     relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
+        del authors #Free ram
     elif relation_type == "citations":
         
         with open(join(path, "relations.json"), "r") as f:
@@ -95,7 +96,9 @@ if not os.path.exists(join(path, "relations.pickle")):
 
             if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
             relations[ (sub_1, sub_2) ] += 1
-    
+
+        del citations
+
     with open(join(path, "relations.pickle"), "wb") as f:
         pickle.dump(relations, f)
 else:
@@ -216,8 +219,8 @@ if primary_colors:
                     break
             
             if not connected_to_top_node: primary_nodes[node] = top_colors[len(primary_nodes)]
-
-    primary_nodes = customized_node_colors
+    else:
+        primary_nodes = customized_node_colors
 
     #Color nodes and edges
     for selected_node, color in primary_nodes.items():
