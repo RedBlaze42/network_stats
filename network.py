@@ -13,8 +13,8 @@ sub_number = 1000
 connections_number = 5
 primary_colors = True
 secondary_colors = True
-
-filter_explicit = True 
+filter_explicit = False 
+customized_node_colors = {"memes": "71eb34", "guns": "ffa200", "politics": "ffea00", "AmItheAsshole": "00fff7", "gonewild": "ff00d0", "pokemon": "9000ff", "nfl": "002fff", "Drugs": "5eff00", "united_kingdom": "00a2ff", "canada": "ff0055"}
 
 blacklist = ["AskReddit"]
 
@@ -130,7 +130,8 @@ def get_connected_nodes(node, edge_list):
 
 #Final network
 print("Network...")
-net = Network('920px', '1900px', bgcolor="#000000", font_color="#ffffff")
+net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
+net.path = "template.html"
 max_weight = max([weight for sub, weight in relations.items()])
 edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in top_edges.items() if weight > 0]
 
@@ -146,13 +147,22 @@ net.add_edges(edges)
 #net.show_buttons(filter_=True)
 
 net.options["physics"].use_barnes_hut({
-            "gravity": -31000,
-            "central_gravity": 1,
-            "spring_length": 200,
-            "spring_strength": 0.04,
-            "damping": 0.2,
-            "overlap": 0.1,
-        })
+        "gravity": -31000,
+        "central_gravity": 0.1,
+        "spring_length": 200,
+        "spring_strength": 0.04,
+        "damping": 0.2,
+        "overlap": 0.1,
+    })
+
+net.options.__dict__["layout"] = {"improvedLayout": False}
+net.options.__dict__["physics"].__dict__["stabilization"] = {
+        "enabled": True,
+        "fit": True,
+        "iterations": 3000,
+        "onlyDynamicEdges": False,
+        "updateInterval": 50
+    }
 
 net.options.__dict__["nodes"] = {
     "borderWidth": 3,
@@ -181,46 +191,51 @@ def mix_colors(d):
 
 if primary_colors:
     print("Primary colors...")
+
+    primary_nodes = dict()
     #Top nodes colors
-    top_connected_nodes = {sub: 0 for sub in top_subs_name}
+    if len(customized_node_colors) == 0:
+        top_connected_nodes = {sub: 0 for sub in top_subs_name}
 
-    for sub in top_subs_name:
-        for edge_sub, weight in top_edges.items():
-            if sub in edge_sub and edge_sub in relations.keys():
-                top_connected_nodes[sub] += relations[edge_sub]
+        for sub in top_subs_name:
+            for edge_sub, weight in top_edges.items():
+                if sub in edge_sub and edge_sub in relations.keys():
+                    top_connected_nodes[sub] += relations[edge_sub]
 
-    top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
+        top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
 
-    selected_nodes = list()
-    for node, links in top_connected_nodes:
-        if len(selected_nodes) == len(top_colors): break
+        for node, links in top_connected_nodes:
+            if len(primary_nodes) == len(top_colors): break
 
-        connected_to_top_node = False
-        connected_nodes = get_connected_nodes(node, top_edges)
-        for node_edges in connected_nodes:
-            if node_edges in selected_nodes:
-                connected_to_top_node = True
-                break
-        
-        if not connected_to_top_node: selected_nodes.append(node)
+            connected_to_top_node = False
+            connected_nodes = get_connected_nodes(node, top_edges)
+            for node_edges in connected_nodes:
+                if node_edges in primary_nodes.keys():
+                    connected_to_top_node = True
+                    break
+            
+            if not connected_to_top_node: primary_nodes[node] = top_colors[len(primary_nodes)]
 
-    for i, selected_node in enumerate(selected_nodes):
-        net.get_node(selected_node)["color"] = "#{}".format(top_colors[i])
+    primary_nodes = customized_node_colors
+
+    #Color nodes and edges
+    for selected_node, color in primary_nodes.items():
+        net.get_node(selected_node)["color"] = "#{}".format(color)
         for edge in net.edges:
             if edge['from'] == selected_node or edge['to'] == selected_node:
-                edge["color"] = "#{}".format(top_colors[i])
+                edge["color"] = "#{}".format(color)
 
     #Secondary colors
     if secondary_colors:
         print("Secondary colors...")
         for node in top_subs_name:
-            if node in selected_nodes: continue
+            if node in primary_nodes.keys(): continue
             connected_nodes = get_connected_nodes(node, top_edges)
             
             node_colors = dict()
             for connected_node in connected_nodes:
-                if connected_node in selected_nodes and (min(node, connected_node), max(node, connected_node)) in relations.keys():
-                    color = top_colors[selected_nodes.index(connected_node)]
+                if connected_node in primary_nodes.keys() and (min(node, connected_node), max(node, connected_node)) in relations.keys():
+                    color = primary_nodes[connected_node]
                     node_colors[color] = relations[min(node, connected_node), max(node, connected_node)]
 
             node_colors["ffffff"] = max(node_colors.values()) if len(node_colors) > 0 else 1
@@ -229,4 +244,4 @@ if primary_colors:
 net.get_node(node)
 
 print("Output...")
-net.show(join(path, "output.html"))
+net.save_graph(join(path, "output.html"))
