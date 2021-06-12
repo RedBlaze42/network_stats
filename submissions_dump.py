@@ -26,8 +26,7 @@ if __name__ == "__main__":
     
     file_name = "reddit_data/RS*.zst"
     try:
-        #treat_files(treat_submission, file_name)
-        treat_file(treat_submission, "reddit_data\\RS_2019-12.zst")
+        treat_files(treat_submission, file_name)
     except KeyboardInterrupt:
         print("Arrêt...")
 
