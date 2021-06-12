@@ -5,16 +5,17 @@ from tqdm import tqdm
 from math import log, exp
 import pickle, os
 from os.path import join
+from save_pos import save_pos
 
 path = "output_comments_december"
 relation_type = "authors" #authors, citations
 
-sub_number = 1000
-connections_number = 5
+sub_number = 2000
+connections_number = 3
 primary_colors = True
 secondary_colors = True
 filter_explicit = False 
-customized_node_colors = {"memes": "71eb34", "guns": "ffa200", "politics": "ffea00", "AmItheAsshole": "00fff7", "gonewild": "ff00d0", "pokemon": "9000ff", "nfl": "002fff", "Drugs": "5eff00", "united_kingdom": "00a2ff", "canada": "ff0055"}
+customized_node_colors = {"memes": "71eb34", "guns": "ffa200", "politics": "ffea00", "AmItheAsshole": "00fff7", "gonewild": "ff00d0", "pokemon": "9000ff", "nfl": "002fff", "Drugs": "5eff00", "unitedkingdom": "00a2ff", "canada": "ff0055"}
 
 blacklist = ["AskReddit"]
 
@@ -244,4 +245,7 @@ if primary_colors:
 net.get_node(node)
 
 print("Output...")
-net.save_graph(join(path, "output.html"))
+html_path = join(path, "output.html")
+net.save_graph(html_path)
+
+save_pos(html_path)
