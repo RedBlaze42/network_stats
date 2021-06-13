@@ -1,4 +1,4 @@
-import json
+import json, ndjson
 from re import I
 from pyvis.network import Network
 from tqdm import tqdm
@@ -116,50 +116,64 @@ class RedditNetwork():
 
     def compute_relations_post(self):
         relations = dict()
-        with open(join(self.input_path, "authors.json"), "r") as f:
-            authors = json.load(f)
+        
+        with open(join(self.input_path, "dump_infos.json"), "r") as f:
+            element_number = json.load(f)["element_number"]
+        
+        with open(join(self.input_path, "authors.ndjson"), "r") as f:
+            authors = ndjson.reader(f)
 
-        print("Total posts to analyze: {:,}".format(sum([len(author) for author in authors])))
+            progress_bar = tqdm(total = element_number, mininterval=0.5)
+            for author in tqdm(authors, mininterval=0.5):
+                progress_bar.update(1)
+                author_name, author_data = list(author.items())[0]
+                
+                if author_name in self.blacklisted_authors: continue
+                
+                author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
 
-        for author_name, author_data in tqdm(authors.items()):
-            if author_name in self.blacklisted_authors: continue
-            author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
+                author_coms = sum(author_data.values())
+                author_subs_name = sorted(author_data.keys())
 
-            author_coms = sum(author_data.values())
-            author_subs_name = sorted(author_data.keys())
+                for sub_1 in author_subs_name:
+                    for sub_2 in author_subs_name:
+                        if sub_1 >= sub_2: continue
+                        if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
+                        
+                        #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
+                        #(author_data[sub_1]+author_data[sub_2])/author_coms
+                        relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
             
-            for sub_1 in author_subs_name:
-                for sub_2 in author_subs_name:
-                    if sub_1 >= sub_2: continue
-                    if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
-                    
-                    #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
-                    #(author_data[sub_1]+author_data[sub_2])/author_coms
-                    relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
+            progress_bar.close()
 
         return relations
 
     def compute_relations_citations(self):
         relations = dict()
-        with open(join(self.input_path, "relations.json"), "r") as f:
-            citations = json.load(f)
 
-        print("Total citations to analyze: {:,}".format(len(citations)))
+        with open(join(self.input_path, "dump_infos.json"), "r") as f:
+            element_number = json.load(f)["element_number"]
 
-        for from_sub, to_sub in tqdm(citations):
-            if from_sub == to_sub: continue
-            from_sub, to_sub = str(from_sub), str(to_sub)
-            
-            from_sub, to_sub = self.sub_ids[from_sub], self.sub_ids[to_sub]
+        with open(join(self.input_path, "relations.ndjson"), "r") as f:
+            citations = ndjson.reader(f)
+            progress_bar = tqdm(total = element_number, mininterval=0.5)
+            for sub in citations:
+                progress_bar.update(1)
+                from_sub, to_sub = list(sub.items())[0]
+                if from_sub == to_sub: continue
+                from_sub, to_sub = str(from_sub), str(to_sub)
+                
+                from_sub, to_sub = self.sub_ids[from_sub], self.sub_ids[to_sub]
 
-            if from_sub not in self.top_subs_name or to_sub not in self.top_subs_name: continue
+                if from_sub not in self.top_subs_name or to_sub not in self.top_subs_name: continue
 
-            sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
+                sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
 
-            if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
-            relations[ (sub_1, sub_2) ] += 1
+                if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
+                relations[ (sub_1, sub_2) ] += 1
 
-        return relations
+            progress_bar.close()
+            return relations
 
     @property
     def top_edges(self):

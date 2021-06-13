@@ -1,5 +1,5 @@
-from treat_comments import treat_file
-import re, os, json
+from treat_dump_file import treat_file
+import re, os, json, ndjson
 
 pattern = re.compile(r'r\/([a-zA-Z_0-9]+)')
 
@@ -39,11 +39,16 @@ if __name__ == "__main__":
 
     os.makedirs("output", exist_ok=True)
 
-    with open("output/relations.json","w") as f:
-        json.dump(relations, f)
+    with open("output/relations.ndjson","w") as f:
+        writer = ndjson.writer(f, ensure_ascii=False)
+        for from_sub, to_sub in relations.items():
+            writer.writerow({from_sub: to_sub})
 
     with open("output/subreddits.json","w") as f:
         json.dump(subs, f)
 
     with open("output/subreddits_ids.json","w") as f:
         json.dump(subs_ids, f)
+
+    with open("output/dump_infos.json","w") as f:
+        json.dump({"element_number": len(relations)}, f)

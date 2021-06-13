@@ -1,5 +1,5 @@
 from treat_dump_file import treat_file, treat_files
-import json, os
+import json, ndjson, os
 
 if __name__ == "__main__":
 
@@ -31,11 +31,16 @@ if __name__ == "__main__":
         print("Arrêt...")
 
     os.makedirs("output", exist_ok=True)
-    with open("output/authors.json","w") as f:
-        json.dump(authors, f)
+    with open("output/authors.ndjson","w") as f:
+        writer = ndjson.writer(f, ensure_ascii=False)
+        for author_name, author_data in authors.items():
+            writer.writerow({author_name: author_data})
 
     with open("output/subreddits.json","w") as f:
         json.dump(subs, f)
 
     with open("output/subreddits_ids.json","w") as f:
         json.dump(subs_ids, f)
+
+    with open("output/dump_infos.json","w") as f:
+        json.dump({"element_number": len(authors)}, f)
