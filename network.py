@@ -116,7 +116,7 @@ class RedditNetwork():
 
     def compute_relations_post(self):
         relations = dict()
-        with open(join(self.input_path, "authors.json"), "r") as f:
+        with open(join(self.input_path, "authors.ndjson"), "r") as f:
             authors = ndjson.reader(f)
 
         print("Total posts to analyze: {:,}".format(sum([len(author) for author in authors])))
@@ -142,7 +142,7 @@ class RedditNetwork():
 
     def compute_relations_citations(self):
         relations = dict()
-        with open(join(self.input_path, "relations.json"), "r") as f:
+        with open(join(self.input_path, "relations.ndjson"), "r") as f:
             citations = ndjson.reader(f)
 
         print("Total citations to analyze: {:,}".format(len(citations)))
