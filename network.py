@@ -127,7 +127,9 @@ class RedditNetwork():
             for author in tqdm(authors, mininterval=0.5):
                 progress_bar.update(1)
                 author_name, author_data = list(author.items())[0]
-                if author_name == "AutoModerator": continue
+                
+                if author_name in self.blacklisted_authors: continue
+                
                 author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
 
                 author_coms = sum(author_data.values())
