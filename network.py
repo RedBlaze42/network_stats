@@ -124,7 +124,7 @@ class RedditNetwork():
             authors = ndjson.reader(f)
 
             progress_bar = tqdm(total = element_number, mininterval=0.5)
-            for author in tqdm(authors, mininterval=0.5):
+            for author in authors:
                 progress_bar.update(1)
                 author_name, author_data = list(author.items())[0]
                 
