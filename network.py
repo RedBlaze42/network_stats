@@ -1,4 +1,4 @@
-import json
+import json, ndjson
 from re import I
 from pyvis.network import Network
 from tqdm import tqdm
@@ -117,11 +117,12 @@ class RedditNetwork():
     def compute_relations_post(self):
         relations = dict()
         with open(join(self.input_path, "authors.json"), "r") as f:
-            authors = json.load(f)
+            authors = ndjson.reader(f)
 
         print("Total posts to analyze: {:,}".format(sum([len(author) for author in authors])))
 
-        for author_name, author_data in tqdm(authors.items()):
+        for author in tqdm(authors):
+            author_name, author_data = list(author.items())[0]
             if author_name == "AutoModerator": continue
             author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
 
@@ -142,11 +143,12 @@ class RedditNetwork():
     def compute_relations_citations(self):
         relations = dict()
         with open(join(self.input_path, "relations.json"), "r") as f:
-            citations = json.load(f)
+            citations = ndjson.reader(f)
 
         print("Total citations to analyze: {:,}".format(len(citations)))
 
-        for from_sub, to_sub in tqdm(citations):
+        for sub in tqdm(citations):
+            from_sub, to_sub = list(sub.items())[0]
             if from_sub == to_sub: continue
             from_sub, to_sub = str(from_sub), str(to_sub)
             
