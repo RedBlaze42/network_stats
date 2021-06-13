@@ -123,7 +123,7 @@ class RedditNetwork():
         with open(join(self.input_path, "authors.ndjson"), "r") as f:
             authors = ndjson.reader(f)
 
-            progress_bar = tqdm(total = element_number, mininterval=0.5)
+            progress_bar = tqdm(total = element_number, mininterval = 0.5, unit_scale = True)
             for author in authors:
                 progress_bar.update(1)
                 author_name, author_data = list(author.items())[0]
@@ -156,7 +156,7 @@ class RedditNetwork():
 
         with open(join(self.input_path, "relations.ndjson"), "r") as f:
             citations = ndjson.reader(f)
-            progress_bar = tqdm(total = element_number, mininterval=0.5)
+            progress_bar = tqdm(total = element_number, mininterval=0.5, unit_scale = True)
             for sub in citations:
                 progress_bar.update(1)
                 from_sub, to_sub = list(sub.items())[0]
