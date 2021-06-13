@@ -10,8 +10,8 @@ for config in configs:
     with open(config, "r") as f: output_path = json.load(f)["output_path"]
     if os.path.exists(output_path): continue
     
+    print("Config file: {}".format(config))
     net = RedditNetwork("output_comments_2019", config)
-
 
     net.export_network(output_path)
     del net
