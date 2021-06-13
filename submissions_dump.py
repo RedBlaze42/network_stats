@@ -41,3 +41,6 @@ if __name__ == "__main__":
 
     with open("output/subreddits_ids.json","w") as f:
         json.dump(subs_ids, f)
+        
+    with open("output/dump_infos.json","w") as f:
+        json.dump({"element_number": len(authors)}, f)
