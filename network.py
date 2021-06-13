@@ -21,7 +21,7 @@ class RedditNetwork():
     
     #Filter specific parameters
     blacklisted_subs = ["AskReddit", "TalkativePeople", "reddit_feed_bot"]
-    blacklisted_authors = ["AutoNewsAdmin","AutoModerator"]
+    blacklisted_authors = ["AutoNewsAdmin","AutoModerator", "[deleted]"]
     sub_number = 1000
     filter_explicit = False
     inverse_explicit_filter = False
