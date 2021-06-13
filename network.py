@@ -122,7 +122,7 @@ class RedditNetwork():
         print("Total posts to analyze: {:,}".format(sum([len(author) for author in authors])))
 
         for author_name, author_data in tqdm(authors.items()):
-            if author_name == "AutoModerator": continue
+            if author_name in self.blacklisted_authors: continue
             author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
 
             author_coms = sum(author_data.values())
