@@ -121,7 +121,7 @@ class RedditNetwork():
 
             total_posts = 0
 
-            for author in authors:
+            for author in tqdm(authors):
                 author_name, author_data = list(author.items())[0]
                 if author_name == "AutoModerator": continue
                 author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
@@ -150,7 +150,7 @@ class RedditNetwork():
 
             total_citations = 0
 
-            for sub in citations:
+            for sub in tqdm(citations):
                 from_sub, to_sub = list(sub.items())[0]
                 if from_sub == to_sub: continue
                 from_sub, to_sub = str(from_sub), str(to_sub)
