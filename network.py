@@ -20,7 +20,8 @@ def mix_colors(d):
 class RedditNetwork():
     
     #Filter specific parameters
-    blacklist = ["AskReddit"]
+    blacklisted_subs = ["AskReddit", "TalkativePeople", "reddit_feed_bot"]
+    blacklisted_authors = ["AutoNewsAdmin","AutoModerator"]
     sub_number = 1000
     filter_explicit = False
     inverse_explicit_filter = False
@@ -42,7 +43,8 @@ class RedditNetwork():
         with open(config_path, "r") as f:
             self.config = json.load(f)
         
-        if "blacklist" in self.config.keys(): self.blacklist = self.config["blacklist"]
+        if "blacklisted_subs" in self.config.keys(): self.blacklisted_subs = self.config["blacklisted_subs"]
+        if "blacklisted_authors" in self.config.keys(): self.blacklisted_authors = self.config["blacklisted_authors"]
         if "top_colors" in self.config.keys(): self.top_colors = self.config["top_colors"]
         if "customized_node_colors" in self.config.keys(): self.customized_node_colors = self.config["customized_node_colors"]
         if "sub_number" in self.config.keys(): self.sub_number = self.config["sub_number"]
@@ -51,7 +53,7 @@ class RedditNetwork():
         if "inverse_explicit_filter" in self.config.keys(): self.inverse_explicit_filter = self.config["inverse_explicit_filter"]
         if "secondary_colors" in self.config.keys(): self.secondary_colors = self.config["secondary_colors"]
         
-        self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter])).hexdigest()[:5]
+        self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
         #Import sub ids
         with open(join(input_path, "subreddits_ids.json"), "r") as f:
@@ -63,7 +65,7 @@ class RedditNetwork():
         #Import sub values
         with open(join(input_path, "subreddits.json"), "r") as f:
             subs = json.load(f)
-            subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in self.blacklist}
+            subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in self.blacklisted_subs and not self.sub_ids[sub_id].startswith("u_")}
 
             if self.filter_explicit:
                 with open("explicit_subs.json", "r") as f:
@@ -97,8 +99,8 @@ class RedditNetwork():
         if self.relations_data is not None: return self.relations_data
 
         print("Relations...")
-        relation_path = join(self.input_path, "relations_{}subs.pickle".format(self.filter_config_hash))
-        if os.path.exists(relation_path):
+        relation_path = join(self.input_path, "relations_{}.pickle".format(self.filter_config_hash))
+        if os.path.exists(relation_path): #If a relation map is found with the same settings, load it
             with open(relation_path, "rb") as f:
                 self.relations_data = pickle.load(f)
         else:
@@ -217,7 +219,7 @@ class RedditNetwork():
 
         self.net_data.options.__dict__["nodes"] = {
             "borderWidth": 3,
-            "borderWidthSelected": 5,
+            "borderWidthSelected": 10,
             "color": {
                 "highlight": {
                     "border": "rgba(255,0,0,1)"
@@ -229,6 +231,9 @@ class RedditNetwork():
                 "strokeColor": "rgba(0,0,0,0.7)"
             }
         }
+
+        if "show_buttons" in self.config.keys() and self.config["show_buttons"]: self.net_data.show_buttons(filter_=True)
+
         return self.net_data
 
     def set_primary_colors(self):
@@ -296,5 +301,7 @@ class RedditNetwork():
 
 
 if __name__ == "__main__":
-    net = RedditNetwork("output_comments_december")
-    net.export_network("test.html")
+    from save_pos import save_pos
+    net = RedditNetwork("output_comments_jan-nov", "config.json")
+    net.export_network("output_comments_jan-nov/output.html")
+    save_pos("output_comments_jan-nov/output.html")
