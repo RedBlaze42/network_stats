@@ -119,24 +119,27 @@ class RedditNetwork():
         with open(join(self.input_path, "authors.ndjson"), "r") as f:
             authors = ndjson.reader(f)
 
-        print("Total posts to analyze: {:,}".format(sum([len(author) for author in authors])))
+            total_posts = 0
 
-        for author in tqdm(authors):
-            author_name, author_data = list(author.items())[0]
-            if author_name == "AutoModerator": continue
-            author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
+            for author in authors:
+                author_name, author_data = list(author.items())[0]
+                if author_name == "AutoModerator": continue
+                author_data = {self.sub_ids[sub_id]:value for sub_id, value in author_data.items() if self.sub_ids[sub_id] in self.top_subs_name}
 
-            author_coms = sum(author_data.values())
-            author_subs_name = sorted(author_data.keys())
-            
-            for sub_1 in author_subs_name:
-                for sub_2 in author_subs_name:
-                    if sub_1 >= sub_2: continue
-                    if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
-                    
-                    #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
-                    #(author_data[sub_1]+author_data[sub_2])/author_coms
-                    relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
+                author_coms = sum(author_data.values())
+                author_subs_name = sorted(author_data.keys())
+                total_posts += author_coms
+
+                for sub_1 in author_subs_name:
+                    for sub_2 in author_subs_name:
+                        if sub_1 >= sub_2: continue
+                        if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
+                        
+                        #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
+                        #(author_data[sub_1]+author_data[sub_2])/author_coms
+                        relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
+                        
+            print("Total posts to analyzed: {:,}".format(total_posts))
 
         return relations
 
@@ -145,23 +148,26 @@ class RedditNetwork():
         with open(join(self.input_path, "relations.ndjson"), "r") as f:
             citations = ndjson.reader(f)
 
-        print("Total citations to analyze: {:,}".format(len(citations)))
+            total_citations = 0
 
-        for sub in tqdm(citations):
-            from_sub, to_sub = list(sub.items())[0]
-            if from_sub == to_sub: continue
-            from_sub, to_sub = str(from_sub), str(to_sub)
-            
-            from_sub, to_sub = self.sub_ids[from_sub], self.sub_ids[to_sub]
+            for sub in citations:
+                from_sub, to_sub = list(sub.items())[0]
+                if from_sub == to_sub: continue
+                from_sub, to_sub = str(from_sub), str(to_sub)
+                
+                from_sub, to_sub = self.sub_ids[from_sub], self.sub_ids[to_sub]
 
-            if from_sub not in self.top_subs_name or to_sub not in self.top_subs_name: continue
+                if from_sub not in self.top_subs_name or to_sub not in self.top_subs_name: continue
 
-            sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
+                sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
 
-            if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
-            relations[ (sub_1, sub_2) ] += 1
+                if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
+                relations[ (sub_1, sub_2) ] += 1
+                total_citations += 1
 
-        return relations
+            print("Total citations to analyze: {:,}".format(total_citations))
+
+            return relations
 
     @property
     def top_edges(self):
