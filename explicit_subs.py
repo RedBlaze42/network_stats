@@ -1,4 +1,4 @@
-from treat_comments import treat_comments
+from treat_dump_file import treat_file
 import json
 
 explicit_subs = list()
@@ -9,7 +9,7 @@ def treat_explicit_sub(sub):
 
 
 if __name__ == '__main__':
-    treat_comments(treat_explicit_sub, "reddit_subreddits.ndjson.zst")
+    treat_file(treat_explicit_sub, "reddit_data/reddit_subreddits.ndjson.zst")
 
     with open("explicit_subs.json", "w") as f:
         json.dump(explicit_subs, f)
