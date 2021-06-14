@@ -32,6 +32,7 @@ class RedditNetwork():
     secondary_colors = True
     top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
     customized_node_colors = {}
+    spring_length = 200
 
     _net = None
     _top_edges = None
@@ -52,6 +53,7 @@ class RedditNetwork():
         if "filter_explicit" in self.config.keys(): self.filter_explicit = self.config["filter_explicit"]
         if "inverse_explicit_filter" in self.config.keys(): self.inverse_explicit_filter = self.config["inverse_explicit_filter"]
         if "secondary_colors" in self.config.keys(): self.secondary_colors = self.config["secondary_colors"]
+        if "spring_length" in self.config.keys(): self.spring_length = self.config["spring_length"]
         
         self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
@@ -228,7 +230,7 @@ class RedditNetwork():
         self._net.options["physics"].use_barnes_hut({
                 "gravity": -31000,
                 "central_gravity": 0.1,
-                "spring_length": 300,
+                "spring_length": self.spring_length,
                 "spring_strength": 0.04,
                 "damping": 0.2,
                 "overlap": 0.1,
