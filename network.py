@@ -138,7 +138,7 @@ class RedditNetwork():
                 for sub_1 in author_subs_name:
                     for sub_2 in author_subs_name:
                         if sub_1 >= sub_2: continue
-                        #if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
+                        
                         try:
                             relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
                         except KeyError:
@@ -172,8 +172,10 @@ class RedditNetwork():
 
                 sub_1, sub_2 = min(from_sub, to_sub), max(from_sub, to_sub)
 
-                if not (sub_1, sub_2) in relations.keys(): relations[sub_1, sub_2] = 0
-                relations[ (sub_1, sub_2) ] += 1
+                try:
+                    relations[ (sub_1, sub_2) ] += 1
+                except KeyError:
+                    relations[ (sub_1, sub_2) ] = 1
 
             progress_bar.close()
             return relations
@@ -226,7 +228,7 @@ class RedditNetwork():
         self._net.options["physics"].use_barnes_hut({
                 "gravity": -31000,
                 "central_gravity": 0.1,
-                "spring_length": 200,
+                "spring_length": 300,
                 "spring_strength": 0.04,
                 "damping": 0.2,
                 "overlap": 0.1,
@@ -329,8 +331,6 @@ class RedditNetwork():
 
 if __name__ == "__main__":
     from save_pos import save_pos
-    net = RedditNetwork("output_submissions_2019","config_submissions.json")
+    net = RedditNetwork("output_comments_2019","configs/08_config_4k_3c_all.json")
     net.export_network("test.html")
-    #net = RedditNetwork("output_comments_2019", "config.json")
-    #net.export_network("output_comments_2019/output.html")
-    #save_pos("output_comments_2019/output.html")
+    save_pos("test.html")
