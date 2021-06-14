@@ -138,11 +138,14 @@ class RedditNetwork():
                 for sub_1 in author_subs_name:
                     for sub_2 in author_subs_name:
                         if sub_1 >= sub_2: continue
-                        if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
+                        #if not (sub_1, sub_2) in relations.keys(): relations[ (sub_1, sub_2) ] = 0
+                        try:
+                            relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
+                        except KeyError:
+                            relations[(sub_1, sub_2)] = 1
                         
                         #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
                         #(author_data[sub_1]+author_data[sub_2])/author_coms
-                        relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
             
             progress_bar.close()
 
@@ -326,6 +329,8 @@ class RedditNetwork():
 
 if __name__ == "__main__":
     from save_pos import save_pos
-    net = RedditNetwork("output_comments_2019", "config.json")
-    net.export_network("output_comments_2019/output.html")
-    save_pos("output_comments_2019/output.html")
+    net = RedditNetwork("output_submissions_2019","config_submissions.json")
+    net.export_network("test.html")
+    #net = RedditNetwork("output_comments_2019", "config.json")
+    #net.export_network("output_comments_2019/output.html")
+    #save_pos("output_comments_2019/output.html")
