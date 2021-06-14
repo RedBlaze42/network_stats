@@ -1,7 +1,7 @@
 from network import RedditNetwork
 from save_pos import save_pos
 from glob import glob
-import json, os
+import json, os, gc
 
 configs = glob("configs/*.json")
 configs.sort()
@@ -15,4 +15,5 @@ for config in configs:
 
     net.export_network(output_path)
     del net
+    gc.collect()
     save_pos(output_path)
