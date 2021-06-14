@@ -326,6 +326,6 @@ class RedditNetwork():
 
 if __name__ == "__main__":
     from save_pos import save_pos
-    net = RedditNetwork("output_comments_jan-nov", "config.json")
-    net.export_network("output_comments_jan-nov/output.html")
-    save_pos("output_comments_jan-nov/output.html")
+    net = RedditNetwork("output_comments_2019", "config.json")
+    net.export_network("output_comments_2019/output.html")
+    save_pos("output_comments_2019/output.html")
