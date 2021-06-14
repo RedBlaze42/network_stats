@@ -205,22 +205,22 @@ class RedditNetwork():
 
     @property
     def net(self):
-        if self.net_data is not None: return self.net_data
+        if self._net is not None: return self._net
         print("Network...")
         
-        self.net_data = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
-        self.net_data.path = "template.html"
+        self._net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
+        self._net.path = "template.html"
         max_weight = max([weight for sub, weight in self.relations.items()])
-        edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in self.top_edges_data.items() if weight > 0]
+        edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in self.top_edges.items() if weight > 0]
 
         default_color = "#ffffff" if self.primary_colors else "97c2fc"
         max_comments = max(self.top_subs.values())
         for node, value in self.top_subs.items():
-            self.net_data.add_node(node, size = (exp(value/max_comments)-1)*100, color = default_color, mass = len(self.get_connected_nodes(node, self.top_edges_data)))
+            self._net.add_node(node, size = (exp(value/max_comments)-1)*100, color = default_color, mass = len(self.get_connected_nodes(node, self.top_edges)))
 
-        self.net_data.add_edges(edges)
+        self._net.add_edges(edges)
 
-        self.net_data.options["physics"].use_barnes_hut({
+        self._net.options["physics"].use_barnes_hut({
                 "gravity": -31000,
                 "central_gravity": 0.1,
                 "spring_length": 200,
@@ -229,8 +229,8 @@ class RedditNetwork():
                 "overlap": 0.1,
             })
 
-        self.net_data.options.__dict__["layout"] = {"improvedLayout": False}
-        self.net_data.options.__dict__["physics"].__dict__["stabilization"] = {
+        self._net.options.__dict__["layout"] = {"improvedLayout": False}
+        self._net.options.__dict__["physics"].__dict__["stabilization"] = {
                 "enabled": True,
                 "fit": True,
                 "iterations": 3000,
@@ -238,7 +238,7 @@ class RedditNetwork():
                 "updateInterval": 50
             }
 
-        self.net_data.options.__dict__["nodes"] = {
+        self._net.options.__dict__["nodes"] = {
             "borderWidth": 3,
             "borderWidthSelected": 10,
             "color": {
@@ -253,9 +253,9 @@ class RedditNetwork():
             }
         }
 
-        if "show_buttons" in self.config.keys() and self.config["show_buttons"]: self.net_data.show_buttons(filter_=True)
+        if "show_buttons" in self.config.keys() and self.config["show_buttons"]: self._net.show_buttons(filter_=True)
 
-        return self.net_data
+        return self._net
 
     def set_primary_colors(self):
         print("Primary colors...")
@@ -264,7 +264,7 @@ class RedditNetwork():
             top_connected_nodes = {sub: 0 for sub in self.top_subs_name}
 
             for sub in self.top_subs_name:
-                for edge_sub, weight in self.top_edges_data.items():
+                for edge_sub, weight in self.top_edges.items():
                     if sub in edge_sub and edge_sub in self.relations.keys():
                         top_connected_nodes[sub] += self.relations[edge_sub]
 
@@ -274,7 +274,7 @@ class RedditNetwork():
                 if len(self.primary_nodes) == len(self.top_colors): break
 
                 connected_to_top_node = False
-                connected_nodes = self.get_connected_nodes(node, self.top_edges_data)
+                connected_nodes = self.get_connected_nodes(node, self.top_edges)
                 for node_edges in connected_nodes:
                     if node_edges in self.primary_nodes.keys():
                         connected_to_top_node = True
@@ -286,9 +286,9 @@ class RedditNetwork():
 
         #Color nodes and edges
         for selected_node, color in self.primary_nodes.items():
-            if selected_node not in self.net_data.node_ids: continue
-            self.net_data.get_node(selected_node)["color"] = "#{}".format(color)
-            for edge in self.net_data.edges:
+            if selected_node not in self.net.node_ids: continue
+            self.net.get_node(selected_node)["color"] = "#{}".format(color)
+            for edge in self.net.edges:
                 if edge['from'] == selected_node or edge['to'] == selected_node:
                     edge["color"] = "#{}".format(color)
     
@@ -296,7 +296,7 @@ class RedditNetwork():
         print("Secondary colors...")
         for node in self.top_subs_name:
             if node in self.primary_nodes.keys(): continue
-            connected_nodes = self.get_connected_nodes(node, self.top_edges_data)
+            connected_nodes = self.get_connected_nodes(node, self.top_edges)
             
             node_colors = dict()
             for connected_node in connected_nodes:
@@ -305,7 +305,7 @@ class RedditNetwork():
                     node_colors[color] = self.relations[min(node, connected_node), max(node, connected_node)]
 
             node_colors["ffffff"] = max(node_colors.values()) if len(node_colors) > 0 else 1
-            self.net_data.get_node(node)["color"] = "#{}".format(mix_colors(node_colors))
+            self.net.get_node(node)["color"] = "#{}".format(mix_colors(node_colors))
 
     def export_network(self, output_path):
         self.relations
