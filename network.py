@@ -33,9 +33,9 @@ class RedditNetwork():
     top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
     customized_node_colors = {}
 
-    net_data = None
-    top_edges_data = None
-    relations_data = None    
+    _net = None
+    _top_edges = None
+    _relations = None    
     
     def __init__(self, input_path, config_path):
         self.input_path = input_path
@@ -96,23 +96,23 @@ class RedditNetwork():
 
     @property
     def relations(self):
-        if self.relations_data is not None: return self.relations_data
+        if self._relations is not None: return self._relations
 
         print("Relations...")
         relation_path = join(self.input_path, "relations_{}.pickle".format(self.filter_config_hash))
         if os.path.exists(relation_path): #If a relation map is found with the same settings, load it
             with open(relation_path, "rb") as f:
-                self.relations_data = pickle.load(f)
+                self._relations = pickle.load(f)
         else:
             if self.config["type"] == "posts":
-                self.relations_data = self.compute_relations_post()
+                self._relations = self.compute_relations_post()
             elif self.config["type"] == "citations":
-                self.relations_data = self.compute_relations_citations()
+                self._relations = self.compute_relations_citations()
             
             with open(relation_path, "wb") as f:
-                pickle.dump(self.relations_data, f)
+                pickle.dump(self._relations, f)
         
-        return self.relations_data
+        return self._relations
 
     def compute_relations_post(self):
         relations = dict()
@@ -177,10 +177,10 @@ class RedditNetwork():
 
     @property
     def top_edges(self):
-        if self.top_edges_data is not None: return self.top_edges_data
+        if self._top_edges is not None: return self._top_edges
 
-        print("Edge filtering...")
-        self.top_edges_data = dict()
+        print("Edge filtering {:,} edges...".format(len(self.relations)))
+        self._top_edges = dict()
         node_relations = dict()
         for sub_1 in self.top_subs_name:
             node_relations[sub_1]=dict()
@@ -192,9 +192,16 @@ class RedditNetwork():
             top_node_relation = sorted(node_relations[sub_1].keys(), key = lambda x: node_relations[sub_1][x], reverse = True)[:self.connections_number]
             
             for sub_2 in top_node_relation:
-                self.top_edges_data[(min(sub_1, sub_2), max(sub_1, sub_2))] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
+                self._top_edges[(min(sub_1, sub_2), max(sub_1, sub_2))] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
         
-        return self.top_edges_data
+        return self._top_edges
+
+
+    def filter_lonely_nodes(self):
+        for node in self.top_subs_name:
+            if len(self.get_connected_nodes(node, self.top_edges)) == 0:
+                self.top_subs_name.remove(node)
+                del self.top_subs[node]
 
     @property
     def net(self):
@@ -303,6 +310,9 @@ class RedditNetwork():
     def export_network(self, output_path):
         self.relations
         self.top_edges
+
+        self.filter_lonely_nodes()
+    
         self.net
 
         if self.primary_colors:
