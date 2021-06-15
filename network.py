@@ -3,7 +3,7 @@ from re import I
 from pyvis.network import Network
 from tqdm import tqdm
 from math import log, exp
-import pickle, os
+import pickle, os, gc
 from os.path import join
 from save_pos import save_pos
 from hashlib import md5
@@ -113,6 +113,8 @@ class RedditNetwork():
                 self._relations = self.compute_relations_post()
             elif self.config["type"] == "citations":
                 self._relations = self.compute_relations_citations()
+            
+            gc.collect()
             
             with open(relation_path,"w") as f:
                 writer = ndjson.writer(f, ensure_ascii=False)
