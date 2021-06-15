@@ -32,6 +32,7 @@ def save_pos(file_path):
 
     driver = webdriver.Chrome()
     driver.get("file://" + os.path.abspath(file_path))
+    driver.set_script_timeout(300)
 
     while driver.find_element_by_xpath('//*[@id="loadingBar"]').get_attribute("style") == "":
         sleep(1)
