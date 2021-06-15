@@ -101,18 +101,23 @@ class RedditNetwork():
         if self._relations is not None: return self._relations
 
         print("Relations...")
-        relation_path = join(self.input_path, "relations_{}.pickle".format(self.filter_config_hash))
+        relation_path = join(self.input_path, "relations_{}.ndjson".format(self.filter_config_hash))
         if os.path.exists(relation_path): #If a relation map is found with the same settings, load it
-            with open(relation_path, "rb") as f:
-                self._relations = pickle.load(f)
+            with open(relation_path, "r") as f:
+                self._relations = dict()
+                reader = ndjson.reader(f)
+                for key, value in reader:
+                    self._relations[key[0], key[1]] = value
         else:
             if self.config["type"] == "posts":
                 self._relations = self.compute_relations_post()
             elif self.config["type"] == "citations":
                 self._relations = self.compute_relations_citations()
             
-            with open(relation_path, "wb") as f:
-                pickle.dump(self._relations, f)
+            with open(relation_path,"w") as f:
+                writer = ndjson.writer(f, ensure_ascii=False)
+                for relation in self._relations.items():
+                    writer.writerow(relation)
         
         return self._relations
 
