@@ -193,7 +193,7 @@ class RedditNetwork():
     def top_edges(self):
         if self._top_edges is not None: return self._top_edges
 
-        print("Edge filtering {:,} edges...".format(len(self.relations)))
+        print("Edge filtering {:,} edges...".format(len(self.relations)), end = "")
         self._top_edges = dict()
         node_relations = dict()
         for sub_1 in self.top_subs_name:
@@ -208,6 +208,8 @@ class RedditNetwork():
             for sub_2 in top_node_relation:
                 self._top_edges[(min(sub_1, sub_2), max(sub_1, sub_2))] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))]
         
+        print(" down to {:,} edges".format(len(self._top_edges)))
+
         return self._top_edges
 
 
