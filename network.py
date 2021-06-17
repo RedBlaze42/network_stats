@@ -198,9 +198,11 @@ class RedditNetwork():
         print("Edge filtering {:,} edges...".format(len(self.relations)), end = "")
         self._top_edges = dict()
         node_relations = dict()
+        progress_bar = tqdm(total = len(self.top_subs_ids)**2, mininterval = 0.5, unit_scale = True)
         for sub_1 in self.top_subs_ids:
             node_relations[sub_1]=dict()
             for sub_2 in self.top_subs_ids:
+                progress_bar.update(1)
                 if sub_1 == sub_2: continue
                 if (min(sub_1, sub_2), max(sub_1, sub_2)) not in self.relations.keys(): continue
                 node_relations[sub_1][sub_2] = self.relations[min(sub_1, sub_2), max(sub_1, sub_2)]
