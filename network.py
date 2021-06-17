@@ -232,7 +232,7 @@ class RedditNetwork():
         
         self._net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
         self._net.path = "template.html"
-        max_weight = max([weight for sub, weight in self.relations.items()])
+        max_weight = max([weight for sub, weight in self.top_edges.items()])
         edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in self.top_edges.items() if weight > 0]
 
         default_color = "#ffffff" if self.primary_colors else "97c2fc"
