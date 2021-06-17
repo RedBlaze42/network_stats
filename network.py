@@ -248,7 +248,7 @@ class RedditNetwork():
                 "spring_length": self.spring_length,
                 "spring_strength": 0.04,
                 "damping": 0.2,
-                "overlap": 0.1,
+                "overlap": 1,
             })
 
         self._net.options.__dict__["layout"] = {"improvedLayout": False}
