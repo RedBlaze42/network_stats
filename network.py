@@ -64,7 +64,7 @@ class RedditNetwork():
             for sub, sub_id in ids_sub.items():
                 self.sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
 
-            self.ids_sub = {sub: str(sub_id) for sub, sub_id in ids_sub.items()}
+            self.ids_sub = {sub+"_" if sub.isdigit() else str(sub): str(sub_id) for sub, sub_id in ids_sub.items()}
 
         #Import sub values
         with open(join(input_path, "subreddits.json"), "r") as f:
