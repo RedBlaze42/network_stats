@@ -218,6 +218,7 @@ class RedditNetwork():
 
 
     def filter_lonely_nodes(self):
+        print("Filtering lonely nodes...")
         top_subs_copy = list(self.top_subs_ids)
         for node in top_subs_copy:
             if len(self.get_connected_nodes(node)) == 0:
