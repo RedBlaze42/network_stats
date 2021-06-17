@@ -195,7 +195,7 @@ class RedditNetwork():
     def top_edges(self):
         if self._top_edges is not None: return self._top_edges
 
-        print("Edge filtering {:,} edges...".format(len(self.relations)), end = "")
+        print("Edge filtering {:,} edges...".format(len(self.relations)))
         self._top_edges = dict()
         node_relations = dict()
         progress_bar = tqdm(total = len(self.top_subs_ids)**2, mininterval = 0.5, unit_scale = True)
@@ -212,7 +212,7 @@ class RedditNetwork():
             for sub_2 in top_node_relation:
                 self._top_edges[(self.sub_ids[min(sub_1, sub_2)], self.sub_ids[max(sub_1, sub_2)])] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))] #Translate back to names
         
-        print(" down to {:,} edges".format(len(self._top_edges)))
+        print("down to {:,} edges".format(len(self._top_edges)))
 
         return self._top_edges
 
