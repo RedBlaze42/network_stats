@@ -211,7 +211,7 @@ class RedditNetwork():
             
             for sub_2 in top_node_relation:
                 self._top_edges[(self.sub_ids[min(sub_1, sub_2)], self.sub_ids[max(sub_1, sub_2)])] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))] #Translate back to names
-        
+        progress_bar.close()
         print("down to {:,} edges".format(len(self._top_edges)))
 
         return self._top_edges
