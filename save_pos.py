@@ -4,7 +4,7 @@ from time import sleep
 
 iterations = 5000
 
-def save_pos(file_path):
+def get_pos(file_path):
     with open(file_path, "r") as f:
         html = f.read()
 
@@ -24,12 +24,6 @@ def save_pos(file_path):
     return JSON.stringify(node_positions)
     """
 
-    load_script = """//POSITION_STORED
-    var positions = JSON.parse('DATA_HERE');
-    nodes.forEach(function(item){
-        network.moveNode(item.id, positions[item.id]["x"], positions[item.id]["y"])
-    });"""
-
     driver = webdriver.Chrome()
     driver.get("file://" + os.path.abspath(file_path))
     driver.set_script_timeout(300)
@@ -40,8 +34,19 @@ def save_pos(file_path):
 
     return_value = driver.execute_script(save_script)
     driver.quit()
+    return return_value
 
-    html = html.replace("//LOADING_SCRIPT", load_script.replace("DATA_HERE", return_value))
+def set_pos(file_path, positions):
+
+    load_script = """//POSITION_STORED
+    var positions = JSON.parse('DATA_HERE');
+    nodes.forEach(function(item){
+        network.moveNode(item.id, positions[item.id]["x"], positions[item.id]["y"])
+    });"""
+
+    with open(file_path, "r") as f:
+        html = f.read()
+    html = html.replace("//LOADING_SCRIPT", load_script.replace("DATA_HERE", positions))
     html = html.replace("""network.on("stabilizationProgress", function(params) {
                     document.getElementById('loadingBar').removeAttribute("style");
                     var maxWidth = 496;
@@ -80,6 +85,10 @@ def save_pos(file_path):
 
     with open(file_path, "w") as f:
         f.write(html)
+
+def save_pos(file_path):
+    positions = get_pos(file_path)
+    set_pos(file_path, positions)
 
 if __name__ == "__main__":
     file_path = "output_comments_december/output.html"
