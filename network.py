@@ -253,6 +253,8 @@ class RedditNetwork():
                 "overlap": 1,
             })
 
+        self._net.toggle_drag_nodes(False)
+        
         self._net.options.__dict__["layout"] = {"improvedLayout": False}
         self._net.options.__dict__["physics"].__dict__["stabilization"] = {
                 "enabled": True,
