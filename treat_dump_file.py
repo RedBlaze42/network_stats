@@ -18,7 +18,7 @@ def treat_file(comment_method, file_name):
         dctx = zstd.ZstdDecompressor()
         with dctx.stream_reader(fh) as reader:
             previous_line = ""
-            with tqdm(total = os.path.getsize(file_name), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+            with tqdm(total = os.path.getsize(file_name), mininterval = 0.5, unit='B', unit_scale=True, unit_divisor=1024) as pbar:
                 while True:
                     chunk = reader.read(2**24)
                     chunk_nb += 1
