@@ -11,7 +11,7 @@ for config in configs:
     if os.path.exists(output_path): continue
     
     print("Config file: {}".format(config))
-    net = RedditNetwork("output_comments_2019", config)
+    net = RedditNetwork(config)
 
     net.export_network(output_path)
     del net

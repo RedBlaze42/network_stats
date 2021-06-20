@@ -39,12 +39,12 @@ class RedditNetwork():
     _top_edges = None
     _relations = None    
     
-    def __init__(self, input_path, config_path):
-        self.input_path = input_path
+    def __init__(self, config_path):
 
         with open(config_path, "r") as f:
             self.config = json.load(f)
         
+        self.input_path = self.config["input_path"]
         if "blacklisted_subs" in self.config.keys(): self.blacklisted_subs = self.config["blacklisted_subs"]
         if "blacklisted_authors" in self.config.keys(): self.blacklisted_authors = self.config["blacklisted_authors"]
         if "top_colors" in self.config.keys(): self.top_colors = self.config["top_colors"]
@@ -60,7 +60,7 @@ class RedditNetwork():
         self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
         #Import sub ids
-        with open(join(input_path, "subreddits_ids.json"), "r") as f:
+        with open(join(self.input_path, "subreddits_ids.json"), "r") as f:
             ids_sub = json.load(f)
             self.sub_ids = dict()
             for sub, sub_id in ids_sub.items():
@@ -69,7 +69,7 @@ class RedditNetwork():
             self.ids_sub = {sub+"_" if sub.isdigit() else str(sub): str(sub_id) for sub, sub_id in ids_sub.items()}
 
         #Import sub values
-        with open(join(input_path, "subreddits.json"), "r") as f:
+        with open(join(self.input_path, "subreddits.json"), "r") as f:
             subs = json.load(f)
             subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in self.blacklisted_subs and not self.sub_ids[sub_id].startswith("u_")}
 
@@ -354,6 +354,6 @@ class RedditNetwork():
 
 if __name__ == "__main__":
     from save_pos import save_pos
-    net = RedditNetwork("output_comments_2019","config_test.json")
+    net = RedditNetwork("config_test.json")
     net.export_network("test.html")
     save_pos("test.html")
