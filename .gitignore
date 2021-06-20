@@ -3,4 +3,5 @@ output*
 *.pickle
 *.json
 test.py
+main*.py
 __pycache__
