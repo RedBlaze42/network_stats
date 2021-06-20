@@ -33,6 +33,7 @@ class RedditNetwork():
     top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
     customized_node_colors = {}
     spring_length = 200
+    max_node_size = 100
 
     _net = None
     _top_edges = None
@@ -54,6 +55,7 @@ class RedditNetwork():
         if "inverse_explicit_filter" in self.config.keys(): self.inverse_explicit_filter = self.config["inverse_explicit_filter"]
         if "secondary_colors" in self.config.keys(): self.secondary_colors = self.config["secondary_colors"]
         if "spring_length" in self.config.keys(): self.spring_length = self.config["spring_length"]
+        if "max_node_size" in self.config.keys(): self.max_node_size = self.config["max_node_size"]
         
         self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
@@ -238,7 +240,7 @@ class RedditNetwork():
         default_color = "#ffffff" if self.primary_colors else "97c2fc"
         max_comments = max(self.top_subs.values())
         for node, value in self.top_subs.items():
-            self._net.add_node(self.sub_ids[node], size = (exp(value/max_comments)-1)*100, color = default_color, mass = len(self.get_connected_nodes(node)))
+            self._net.add_node(self.sub_ids[node], size = (exp(value/max_comments)-1)*self.max_node_size, color = default_color, mass = len(self.get_connected_nodes(node)))
 
         self._net.add_edges(edges)
 
