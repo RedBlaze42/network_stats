@@ -23,6 +23,8 @@ def get_pos(file_path):
     var positions = network.getPositions(item.id);
     node_positions[item.id] = positions[item.id]
     });
+    network.fit();
+    node_positions["VIEWPORT_VISJS"] = {"x": network.getViewPosition()["x"],"y": network.getViewPosition()["y"],"scale": network.getScale()}
     return JSON.stringify(node_positions)
     """
 
@@ -32,7 +34,7 @@ def get_pos(file_path):
 
     if "#loadingBar" in html:
         while driver.find_element_by_xpath('//*[@id="loadingBar"]').get_attribute("style") == "":
-            sleep(1)
+            sleep(0.5)
     else:
         sleep(5)
 
@@ -47,7 +49,8 @@ def set_pos(file_path, positions):
     var positions = JSON.parse('DATA_HERE');
     nodes.forEach(function(item){
         network.moveNode(item.id, positions[item.id]["x"], positions[item.id]["y"])
-    });"""
+    });
+    network.moveTo({position: positions["VIEWPORT_VISJS"], scale: positions["VIEWPORT_VISJS"]["scale"]})"""
 
     with open(file_path, "r") as f:
         html = f.read()
