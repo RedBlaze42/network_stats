@@ -6,3 +6,8 @@ output*
 test.py
 main*.py
 __pycache__
+*.html
+!template.html
+*.png
+*.mkv
+*.mp4
