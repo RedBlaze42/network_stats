@@ -70,23 +70,23 @@ class RedditNetwork():
 
         #Import sub values
         with open(join(self.input_path, "subreddits.json"), "r") as f:
-            subs = json.load(f)
-            subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in self.blacklisted_subs and not self.sub_ids[sub_id].startswith("u_")}
+            self.subs = json.load(f)
+            self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in self.blacklisted_subs and not self.sub_ids[sub_id].startswith("u_")}
 
             if self.filter_explicit:
                 with open("explicit_subs.json", "r") as f:
                     explicit_subs = json.load(f)
 
                 if not self.inverse_explicit_filter:
-                    subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] not in explicit_subs}
+                    self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in explicit_subs}
                 else:
-                    subs = {sub_id: value for sub_id, value in subs.items() if self.sub_ids[sub_id] in explicit_subs}
+                    self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] in explicit_subs}
 
         #Sub filter
         print("Filtering...")
-        subs_sorted = sorted(subs.keys(), key=lambda x: subs.get(x), reverse=True)
+        subs_sorted = sorted(self.subs.keys(), key=lambda x: self.subs.get(x), reverse=True)
         sub_number = min(len(subs_sorted),self.sub_number+1)
-        self.top_subs = {sub_id : subs[sub_id] for sub_id in subs_sorted[:sub_number]}
+        self.top_subs = {sub_id : self.subs[sub_id] for sub_id in subs_sorted[:sub_number]}
         self.top_subs_ids = sorted(self.top_subs.keys())
 
     def get_connected_nodes(self, node):
