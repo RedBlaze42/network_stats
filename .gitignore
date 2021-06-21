@@ -1,6 +1,7 @@
 *.zst
 output*
 *.pickle
+*.ndjson
 *.json
 test.py
 main*.py
