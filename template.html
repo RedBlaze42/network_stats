@@ -146,6 +146,7 @@
 
 
 
+
     // initialize global variables.
     var edges;
     var nodes;
@@ -261,6 +262,7 @@
 
 
         {% if nodes|length > 100 and physics_enabled %}
+        //PROGRESS BAR FROM
         network.on("stabilizationProgress", function(params) {
                 document.getElementById('loadingBar').removeAttribute("style");
                 var maxWidth = 496;
@@ -277,7 +279,7 @@
                 document.getElementById('loadingBar').style.opacity = 0;
                 // really clean the dom element
                 setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
-            });
+            });//PROGRESS BAR TO
         {% endif %}
         
         //LOADING_SCRIPT

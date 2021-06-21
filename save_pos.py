@@ -1,8 +1,10 @@
 from selenium import webdriver
-import os
+import os, re
 from time import sleep
 
 iterations = 5000
+regex_progress_bar = re.compile(r"\/\/PROGRESS BAR FROM(?:.|\n)+\/\/PROGRESS BAR TO")
+regex_physics = re.compile(r'(,\n *"enabled": )true(,\n *"stabilization")')
 
 def get_pos(file_path):
     with open(file_path, "r") as f:
@@ -28,8 +30,11 @@ def get_pos(file_path):
     driver.get("file://" + os.path.abspath(file_path))
     driver.set_script_timeout(300)
 
-    while driver.find_element_by_xpath('//*[@id="loadingBar"]').get_attribute("style") == "":
-        sleep(1)
+    if "#loadingBar" in html:
+        while driver.find_element_by_xpath('//*[@id="loadingBar"]').get_attribute("style") == "":
+            sleep(1)
+    else:
+        sleep(5)
 
 
     return_value = driver.execute_script(save_script)
@@ -47,27 +52,8 @@ def set_pos(file_path, positions):
     with open(file_path, "r") as f:
         html = f.read()
     html = html.replace("//LOADING_SCRIPT", load_script.replace("DATA_HERE", positions))
-    html = html.replace("""network.on("stabilizationProgress", function(params) {
-                    document.getElementById('loadingBar').removeAttribute("style");
-                    var maxWidth = 496;
-                    var minWidth = 20;
-                    var widthFactor = params.iterations/params.total;
-                    var width = Math.max(minWidth,maxWidth * widthFactor);
-
-                    document.getElementById('bar').style.width = width + 'px';
-                    document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
-                });
-                network.once("stabilizationIterationsDone", function() {
-                    document.getElementById('text').innerHTML = '100%';
-                    document.getElementById('bar').style.width = '496px';
-                    document.getElementById('loadingBar').style.opacity = 0;
-                    // really clean the dom element
-                    setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
-                });
-    """, "")
-    #html = html.replace(""""stabilization": {
-    #            "enabled": true""",""""stabilization": {
-    #            "enabled": false""")
+    html = re.sub(regex_progress_bar, "", html)
+    html = re.sub(regex_physics, r"\1false\2", html)
 
     html = html.replace('"iterations": {}'.format(iterations), '"iterations": 0')
 
