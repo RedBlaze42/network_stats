@@ -3,7 +3,8 @@ import os, re
 from time import sleep
 
 iterations = 5000
-regex_progress_bar = re.compile(r"\/\/PROGRESS BAR FROM(?:.|\n)+\/\/PROGRESS BAR TO")
+regex_progress_bar_script = re.compile(r"\/\/PROGRESS BAR FROM(?:.|\n)+\/\/PROGRESS BAR TO")
+regex_progress_bar_html = re.compile(r'<div id="loadingBar">(?:(?:.|\n)*<\/div>){3}')
 regex_physics = re.compile(r'(,\n *"enabled": )true(,\n *"stabilization")')
 
 def get_pos(file_path):
@@ -55,22 +56,13 @@ def set_pos(file_path, positions):
     with open(file_path, "r") as f:
         html = f.read()
     html = html.replace("//LOADING_SCRIPT", load_script.replace("DATA_HERE", positions))
-    html = re.sub(regex_progress_bar, "", html)
     html = re.sub(regex_physics, r"\1false\2", html)
+    html = re.sub(regex_progress_bar_script, "", html)
+    html = re.sub(regex_progress_bar_html, "", html)
 
     html = html.replace('"iterations": {}'.format(iterations), '"iterations": 0')
 
 
-    html = html.replace("""<div id="loadingBar">
-    <div class="outerBorder">
-      <div id="text">
-        0%
-      </div>
-      <div id="border">
-        <div id="bar"></div>
-      </div>
-    </div>
-  </div>""", "")
 
     with open(file_path, "w") as f:
         f.write(html)
