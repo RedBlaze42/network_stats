@@ -34,6 +34,7 @@ class RedditNetwork():
     customized_node_colors = {}
     spring_length = 200
     max_node_size = 100
+    max_edge_width = 75
 
     _net = None
     _top_edges = None
@@ -56,6 +57,7 @@ class RedditNetwork():
         if "secondary_colors" in self.config.keys(): self.secondary_colors = self.config["secondary_colors"]
         if "spring_length" in self.config.keys(): self.spring_length = self.config["spring_length"]
         if "max_node_size" in self.config.keys(): self.max_node_size = self.config["max_node_size"]
+        if "max_edge_width" in self.config.keys(): self.max_edge_width = self.config["max_edge_width"]
         
         self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
@@ -235,7 +237,7 @@ class RedditNetwork():
         self._net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
         self._net.path = "template.html"
         max_weight = max([weight for sub, weight in self.top_edges.items()])
-        edges = [(sub[0], sub[1], (weight/max_weight)*20) for sub, weight in self.top_edges.items() if weight > 0]
+        edges = [(sub[0], sub[1], (weight/max_weight)*self.max_edge_width) for sub, weight in self.top_edges.items() if weight > 0]
 
         default_color = "#ffffff" if self.primary_colors else "97c2fc"
         max_comments = max(self.top_subs.values())
@@ -278,6 +280,10 @@ class RedditNetwork():
                 "strokeColor": "rgba(0,0,0,0.7)"
             }
         }
+
+        self._net.options.__dict__["edges"].__dict__["scaling"] = dict()
+        self._net.options.__dict__["edges"].__dict__["scaling"]["max"] = self.max_edge_width
+        self._net.options.__dict__["edges"].__dict__["selectionWidth"] = int(self.max_edge_width/4)
 
         if "show_buttons" in self.config.keys() and self.config["show_buttons"]: self._net.show_buttons(filter_=True)
 
