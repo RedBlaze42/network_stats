@@ -131,7 +131,7 @@ class RedditNetwork():
         while os.path.exists("cache_{:03d}.ndjson".format(cache_number)):
             cache_number += 1
 
-        cache_path = "cache_{:03d}.ndjson".format(cache_number)
+        cache_path = join(self.input_path,"cache_{:03d}.ndjson".format(cache_number))
 
         with open(join(self.input_path, "cache_{:03d}_sublist.json".format(cache_number)), "w") as f:
             json.dump(self.top_subs_ids, f)
