@@ -89,7 +89,7 @@ class RedditNetwork():
         subs_sorted = sorted(self.subs.keys(), key=lambda x: self.subs.get(x), reverse=True)
         sub_number = min(len(subs_sorted),self.sub_number+1)
         self.top_subs = {sub_id : self.subs[sub_id] for sub_id in subs_sorted[:sub_number]}
-        self.top_subs_ids = sorted(self.top_subs.keys())
+        self.top_subs_ids = set(self.top_subs.keys())
 
     def get_connected_nodes(self, node):
         connected_nodes = list()
