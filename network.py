@@ -3,7 +3,7 @@ from re import I
 from pyvis.network import Network
 from tqdm import tqdm
 from math import log, exp
-import pickle, os, gc
+import pickle, os, gc, glob
 from os.path import join
 from save_pos import save_pos
 from hashlib import md5
@@ -60,7 +60,6 @@ class RedditNetwork():
         if "max_edge_width" in self.config.keys(): self.max_edge_width = self.config["max_edge_width"]
         if "connections_number" in self.config.keys(): self.connections_number = self.config["connections_number"]
         
-        self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
         #Import sub ids
         with open(join(self.input_path, "subreddits_ids.json"), "r") as f:
@@ -107,13 +106,14 @@ class RedditNetwork():
         if self._relations is not None: return self._relations
 
         print("Relations...")
-        relation_path = join(self.input_path, "relations_{}.ndjson".format(self.filter_config_hash))
-        if os.path.exists(relation_path): #If a relation map is found with the same settings, load it
-            with open(relation_path, "r") as f:
+        cache_path = self.get_cache_file()
+        if cache_path is not None: #If a relation map is found with the same settings, load it
+            with open(cache_path, "r") as f:
                 self._relations = dict()
                 reader = ndjson.reader(f)
                 for key, value in reader:
-                    self._relations[key[0], key[1]] = value
+                    if key[0] in self.top_subs_ids and key[1] in self.top_subs_ids:
+                        self._relations[key[0], key[1]] = value
         else:
             if self.config["type"] == "posts":
                 self._relations = self.compute_relations_post()
@@ -122,12 +122,36 @@ class RedditNetwork():
             
             gc.collect()
             
-            with open(relation_path,"w") as f:
-                writer = ndjson.writer(f, ensure_ascii=False)
-                for relation in self._relations.items():
-                    writer.writerow(relation)
+            self.save_cache_file()
         
         return self._relations
+
+    def save_cache_file(self):
+        cache_number = 0
+        while os.path.exists("cache_{:03d}.ndjson".format(cache_number)):
+            cache_number += 1
+
+        cache_path = "cache_{:03d}.ndjson".format(cache_number)
+
+        with open(join(self.input_path, "cache_{:03d}_sublist.json".format(cache_number)), "w") as f:
+            json.dump(self.top_subs_ids, f)
+
+        with open(cache_path,"w") as f:
+            writer = ndjson.writer(f, ensure_ascii=False)
+            for relation in self.relations.items():
+                writer.writerow(relation)
+
+
+    def get_cache_file(self):
+        cache_list = glob.glob(join(self.input_path, "cache_*_sublist.json"))
+        for cache in cache_list:
+            with open(cache, "r") as f: cache_sub_list = json.load(f)
+
+            if not any(element not in cache_sub_list for element in self.top_subs_ids):
+                return cache.replace("_sublist.json", ".ndjson")
+
+        return None
+
 
     def compute_relations_post(self):
         relations = dict()
