@@ -111,7 +111,7 @@ class RedditNetwork():
             with open(cache_path, "r") as f:
                 self._relations = dict()
                 reader = ndjson.reader(f)
-                for key, value in reader:
+                for key, value in tqdm(reader, mininterval = 0.5, unit_scale = True):
                     if key[0] in self.top_subs_ids and key[1] in self.top_subs_ids:
                         self._relations[key[0], key[1]] = value
         else:
