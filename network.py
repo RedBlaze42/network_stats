@@ -77,7 +77,7 @@ class RedditNetwork():
 
             if self.filter_explicit:
                 with open("explicit_subs.json", "r") as f:
-                    explicit_subs = json.load(f)
+                    explicit_subs = set(json.load(f))
 
                 if not self.inverse_explicit_filter:
                     self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in explicit_subs}
