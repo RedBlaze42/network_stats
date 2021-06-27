@@ -64,6 +64,7 @@ class RedditNetwork():
         #Import sub ids
         with open(join(self.input_path, "subreddits_ids.json"), "r") as f:
             ids_sub = json.load(f)
+            print("Imported {:,} subs".format(len(ids_sub)))
             self.sub_ids = dict()
             for sub, sub_id in ids_sub.items():
                 self.sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
@@ -128,13 +129,13 @@ class RedditNetwork():
 
     def save_cache_file(self):
         cache_number = 0
-        while os.path.exists("cache_{:03d}.ndjson".format(cache_number)):
+        while os.path.exists(join(self.input_path, "cache_{:03d}.ndjson".format(cache_number))):
             cache_number += 1
 
         cache_path = join(self.input_path,"cache_{:03d}.ndjson".format(cache_number))
 
         with open(join(self.input_path, "cache_{:03d}_sublist.json".format(cache_number)), "w") as f:
-            json.dump(self.top_subs_ids, f)
+            json.dump(list(self.top_subs_ids), f)
 
         with open(cache_path,"w") as f:
             writer = ndjson.writer(f, ensure_ascii=False)
@@ -145,7 +146,7 @@ class RedditNetwork():
     def get_cache_file(self):
         cache_list = glob.glob(join(self.input_path, "cache_*_sublist.json"))
         for cache in cache_list:
-            with open(cache, "r") as f: cache_sub_list = json.load(f)
+            with open(cache, "r") as f: cache_sub_list = set(json.load(f))
 
             if not any(element not in cache_sub_list for element in self.top_subs_ids):
                 return cache.replace("_sublist.json", ".ndjson")
@@ -182,7 +183,7 @@ class RedditNetwork():
                         try:
                             relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
                         except KeyError:
-                            relations[(sub_1, sub_2)] = 1
+                            relations[(sub_1, sub_2)] = (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms)
                         
                         #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
                         #(author_data[sub_1]+author_data[sub_2])/author_coms
@@ -263,7 +264,7 @@ class RedditNetwork():
         self._net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
         self._net.path = "template.html"
         max_weight = max([weight for sub, weight in self.top_edges.items()])
-        edges = [(sub[0], sub[1], (weight/max_weight)) for sub, weight in self.top_edges.items() if weight > 0]
+        edges = [(sub[0], sub[1], (weight/max_weight)) for sub, weight in self.top_edges.items()]
 
         default_color = "#ffffff" if self.primary_colors else "97c2fc"
         max_comments = max(self.top_subs.values())
@@ -386,6 +387,9 @@ class RedditNetwork():
 
 if __name__ == "__main__":
     from save_pos import save_pos
+    from time import time
+    start = time()
     net = RedditNetwork("config_test.json")
     net.export_network("test.html")
     save_pos("test.html")
+    print("Took",round((time()-start)/60,1),"min")
