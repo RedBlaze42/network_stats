@@ -3,7 +3,7 @@ from re import I
 from pyvis.network import Network
 from tqdm import tqdm
 from math import log, exp
-import pickle, os, gc
+import pickle, os, gc, glob
 from os.path import join
 from save_pos import save_pos
 from hashlib import md5
@@ -60,11 +60,11 @@ class RedditNetwork():
         if "max_edge_width" in self.config.keys(): self.max_edge_width = self.config["max_edge_width"]
         if "connections_number" in self.config.keys(): self.connections_number = self.config["connections_number"]
         
-        self.filter_config_hash = md5(json.dumps([self.sub_number, self.filter_explicit, self.inverse_explicit_filter, self.blacklisted_authors, self.blacklisted_subs]).encode('utf-8')).hexdigest()[:5]
         print("Import...")
         #Import sub ids
         with open(join(self.input_path, "subreddits_ids.json"), "r") as f:
             ids_sub = json.load(f)
+            print("Imported {:,} subs".format(len(ids_sub)))
             self.sub_ids = dict()
             for sub, sub_id in ids_sub.items():
                 self.sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
@@ -78,7 +78,7 @@ class RedditNetwork():
 
             if self.filter_explicit:
                 with open("explicit_subs.json", "r") as f:
-                    explicit_subs = json.load(f)
+                    explicit_subs = set(json.load(f))
 
                 if not self.inverse_explicit_filter:
                     self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in explicit_subs}
@@ -90,7 +90,7 @@ class RedditNetwork():
         subs_sorted = sorted(self.subs.keys(), key=lambda x: self.subs.get(x), reverse=True)
         sub_number = min(len(subs_sorted),self.sub_number+1)
         self.top_subs = {sub_id : self.subs[sub_id] for sub_id in subs_sorted[:sub_number]}
-        self.top_subs_ids = sorted(self.top_subs.keys())
+        self.top_subs_ids = set(self.top_subs.keys())
 
     def get_connected_nodes(self, node):
         connected_nodes = list()
@@ -107,13 +107,14 @@ class RedditNetwork():
         if self._relations is not None: return self._relations
 
         print("Relations...")
-        relation_path = join(self.input_path, "relations_{}.ndjson".format(self.filter_config_hash))
-        if os.path.exists(relation_path): #If a relation map is found with the same settings, load it
-            with open(relation_path, "r") as f:
+        cache_path = self.get_cache_file()
+        if cache_path is not None: #If a relation map is found with the same settings, load it
+            with open(cache_path, "r") as f:
                 self._relations = dict()
                 reader = ndjson.reader(f)
-                for key, value in reader:
-                    self._relations[key[0], key[1]] = value
+                for key, value in tqdm(reader, mininterval = 0.5, unit_scale = True):
+                    if key[0] in self.top_subs_ids and key[1] in self.top_subs_ids:
+                        self._relations[key[0], key[1]] = value
         else:
             if self.config["type"] == "posts":
                 self._relations = self.compute_relations_post()
@@ -122,12 +123,36 @@ class RedditNetwork():
             
             gc.collect()
             
-            with open(relation_path,"w") as f:
-                writer = ndjson.writer(f, ensure_ascii=False)
-                for relation in self._relations.items():
-                    writer.writerow(relation)
+            self.save_cache_file()
         
         return self._relations
+
+    def save_cache_file(self):
+        cache_number = 0
+        while os.path.exists(join(self.input_path, "cache_{:03d}.ndjson".format(cache_number))):
+            cache_number += 1
+
+        cache_path = join(self.input_path,"cache_{:03d}.ndjson".format(cache_number))
+
+        with open(join(self.input_path, "cache_{:03d}_sublist.json".format(cache_number)), "w") as f:
+            json.dump(list(self.top_subs_ids), f)
+
+        with open(cache_path,"w") as f:
+            writer = ndjson.writer(f, ensure_ascii=False)
+            for relation in self.relations.items():
+                writer.writerow(relation)
+
+
+    def get_cache_file(self):
+        cache_list = glob.glob(join(self.input_path, "cache_*_sublist.json"))
+        for cache in cache_list:
+            with open(cache, "r") as f: cache_sub_list = set(json.load(f))
+
+            if not any(element not in cache_sub_list for element in self.top_subs_ids):
+                return cache.replace("_sublist.json", ".ndjson")
+
+        return None
+
 
     def compute_relations_post(self):
         relations = dict()
@@ -158,7 +183,7 @@ class RedditNetwork():
                         try:
                             relations[(sub_1, sub_2)] += (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms) # Formule de relation
                         except KeyError:
-                            relations[(sub_1, sub_2)] = 1
+                            relations[(sub_1, sub_2)] = (author_data[sub_1]/author_coms)*(author_data[sub_2]/author_coms)
                         
                         #(min(author_data[sub_1],author_data[sub_2])/max(author_data[sub_1],author_data[sub_2]))*(author_data[sub_1]+author_data[sub_2])
                         #(author_data[sub_1]+author_data[sub_2])/author_coms
@@ -239,7 +264,7 @@ class RedditNetwork():
         self._net = Network('1080px', '1920px', bgcolor="#000000", font_color="#ffffff")
         self._net.path = "template.html"
         max_weight = max([weight for sub, weight in self.top_edges.items()])
-        edges = [(sub[0], sub[1], (weight/max_weight)) for sub, weight in self.top_edges.items() if weight > 0]
+        edges = [(sub[0], sub[1], (weight/max_weight)) for sub, weight in self.top_edges.items()]
 
         default_color = "#ffffff" if self.primary_colors else "97c2fc"
         max_comments = max(self.top_subs.values())
@@ -362,6 +387,9 @@ class RedditNetwork():
 
 if __name__ == "__main__":
     from save_pos import save_pos
+    from time import time
+    start = time()
     net = RedditNetwork("config_test.json")
     net.export_network("test.html")
     save_pos("test.html")
+    print("Took",round((time()-start)/60,1),"min")
