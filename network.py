@@ -30,7 +30,7 @@ class RedditNetwork():
     connections_number = 4
     primary_colors = True
     secondary_colors = True
-    top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7"]
+    top_colors = ["2fcc27", "d97614", "f2d40f", "0ff2ea", "eb09e7", "ff0000"]
     customized_node_colors = {}
     spring_length = 200
     max_node_size = 125
