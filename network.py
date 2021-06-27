@@ -274,10 +274,11 @@ class RedditNetwork():
         self._net.add_edges(edges)
 
         self._net.options["physics"].use_barnes_hut({
-                "gravity": -31000,
+                "theta": 0.4,
+                "gravity": -40000,
                 "central_gravity": 0.1,
                 "spring_length": self.spring_length,
-                "spring_strength": 0.04,
+                "spring_strength": 0.03,
                 "damping": 0.2,
                 "overlap": 1,
             })
