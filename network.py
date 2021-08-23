@@ -323,14 +323,14 @@ class RedditNetwork():
             top_connected_nodes = {sub: 0 for sub in self.top_subs_ids}
 
             for sub in self.top_subs_ids:
-                for edge_sub, weight in self.top_edges.items():
+                for edge_sub in self.top_edges.keys():
                     edge_sub = self.ids_sub[edge_sub[0]], self.ids_sub[edge_sub[1]]
                     if sub in edge_sub and edge_sub in self.relations.keys():
                         top_connected_nodes[sub] += self.relations[edge_sub]
 
             top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
 
-            for node, links in top_connected_nodes:
+            for node in top_connected_nodes.keys():
                 if len(self.primary_nodes) == len(self.top_colors): break
 
                 connected_to_top_node = False
