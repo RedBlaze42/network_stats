@@ -228,17 +228,16 @@ class RedditNetwork():
 
         print("Edge filtering {:,} edges...".format(len(self.relations)))
         self._top_edges = dict()
-        node_relations = dict()
-        progress_bar = tqdm(total = len(self.top_subs_ids)**2, mininterval = 0.5, unit_scale = True)
+        progress_bar = tqdm(total = len(self.relations), mininterval = 0.5, unit_scale = True)
         for sub_1 in self.top_subs_ids:
-            node_relations[sub_1]=dict()
+            node_relations=dict()
             for sub_2 in self.top_subs_ids:
-                progress_bar.update(1)
                 if sub_1 == sub_2: continue
                 if (min(sub_1, sub_2), max(sub_1, sub_2)) not in self.relations.keys(): continue
-                node_relations[sub_1][sub_2] = self.relations[min(sub_1, sub_2), max(sub_1, sub_2)]
+                progress_bar.update(1)
+                node_relations[sub_2] = self.relations[min(sub_1, sub_2), max(sub_1, sub_2)]
             
-            top_node_relation = sorted(node_relations[sub_1].keys(), key = lambda x: node_relations[sub_1][x], reverse = True)[:self.connections_number]
+            top_node_relation = sorted(node_relations.keys(), key = lambda x: node_relations[x], reverse = True)[:self.connections_number]
             
             for sub_2 in top_node_relation:
                 self._top_edges[(self.sub_ids[min(sub_1, sub_2)], self.sub_ids[max(sub_1, sub_2)])] = self.relations[(min(sub_1, sub_2), max(sub_1, sub_2))] #Translate back to names
