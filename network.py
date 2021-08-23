@@ -60,6 +60,14 @@ class RedditNetwork():
         if "max_edge_width" in self.config.keys(): self.max_edge_width = self.config["max_edge_width"]
         if "connections_number" in self.config.keys(): self.connections_number = self.config["connections_number"]
         
+        self.import_subs()
+        
+        self.filter_explicit_subs()
+        
+        self.filter_top_subs()
+        
+        
+    def import_subs(self):
         print("Import...")
         #Import sub ids
         with open(join(self.input_path, "subreddits_ids.json"), "r") as f:
@@ -75,22 +83,24 @@ class RedditNetwork():
         with open(join(self.input_path, "subreddits.json"), "r") as f:
             self.subs = json.load(f)
             self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in self.blacklisted_subs and not self.sub_ids[sub_id].startswith("u_")}
-
-            if self.filter_explicit:
-                with open("explicit_subs.json", "r") as f:
-                    explicit_subs = set(json.load(f))
-
-                if not self.inverse_explicit_filter:
-                    self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in explicit_subs}
-                else:
-                    self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] in explicit_subs}
-
+        
+    def filter_top_subs(self):
         #Sub filter
         print("Filtering...")
         subs_sorted = sorted(self.subs.keys(), key=lambda x: self.subs.get(x), reverse=True)
         sub_number = min(len(subs_sorted),self.sub_number+1)
         self.top_subs = {sub_id : self.subs[sub_id] for sub_id in subs_sorted[:sub_number]}
         self.top_subs_ids = set(self.top_subs.keys())
+        
+    def filter_explicit_subs(self):
+        if self.filter_explicit:
+            with open("explicit_subs.json", "r") as f:
+                explicit_subs = set(json.load(f))
+                
+            if not self.inverse_explicit_filter:
+                self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in explicit_subs}
+            else:
+                self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] in explicit_subs}
 
     def get_connected_nodes(self, node):
         connected_nodes = list()
