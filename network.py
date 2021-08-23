@@ -355,6 +355,9 @@ class RedditNetwork():
     
     def set_secondary_color(self):
         print("Secondary colors...")
+        if len(self.primary_nodes) == 0:
+            print("You first have to set primary colors")
+            return
         for node in self.top_subs_ids:
             if self.sub_ids[node] in self.primary_nodes.keys(): continue
             connected_nodes = self.get_connected_nodes(node)
