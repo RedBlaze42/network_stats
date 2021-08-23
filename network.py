@@ -128,6 +128,7 @@ class RedditNetwork():
         return self._relations
 
     def save_cache_file(self):
+        print("Saving cache...")
         cache_number = 0
         while os.path.exists(join(self.input_path, "cache_{:03d}.ndjson".format(cache_number))):
             cache_number += 1
