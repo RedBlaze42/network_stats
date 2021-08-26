@@ -5,7 +5,6 @@ from tqdm import tqdm
 from math import log, exp
 import pickle, os, gc, glob
 from os.path import join
-from save_pos import save_pos
 from hashlib import md5
 
 def mix_colors(d):
