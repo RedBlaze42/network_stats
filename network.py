@@ -61,17 +61,11 @@ class RedditNetwork():
         
         self.import_subs()
         
-        self.filter_explicit_subs()
-        
-        self.filter_top_subs()
-        
-        
     def import_subs(self):
         print("Import...")
         #Import sub ids
         with open(join(self.input_path, "subreddits_ids.json"), "r") as f:
             ids_sub = json.load(f)
-            print("Imported {:,} subs".format(len(ids_sub)))
             self.sub_ids = dict()
             for sub, sub_id in ids_sub.items():
                 self.sub_ids[str(sub_id)] = sub+"_" if sub.isdigit() else str(sub)
@@ -82,6 +76,7 @@ class RedditNetwork():
         with open(join(self.input_path, "subreddits.json"), "r") as f:
             self.subs = json.load(f)
             self.subs = {sub_id: value for sub_id, value in self.subs.items() if self.sub_ids[sub_id] not in self.blacklisted_subs and not self.sub_ids[sub_id].startswith("u_")}
+        print("Imported {:,} subs".format(len(ids_sub)))
         
     def filter_top_subs(self):
         #Sub filter
@@ -382,6 +377,10 @@ class RedditNetwork():
             self.net.get_node(self.sub_ids[node])["color"] = "#{}".format(mix_colors(node_colors))
 
     def export_network(self, output_path):
+        self.filter_explicit_subs()
+        
+        self.filter_top_subs()
+
         self.relations
         self.top_edges
 
