@@ -167,7 +167,7 @@ class RedditNetwork():
             for author in authors:
                 progress_bar.update(1)
                 author_name, author_data = list(author.items())[0]
-                if len(author_data) > 3000: continue #Ignore les auteurs avec un commentaires dans plus de 3000 sub différents (souvent des bots)
+                if len(author_data) <= 1 or len(author_data) > 3000: continue #Ignore les auteurs avec un commentaires dans plus de 3000 sub différents (souvent des bots)
                 
                 if author_name in self.blacklisted_authors: continue
                 
