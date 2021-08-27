@@ -395,6 +395,6 @@ if __name__ == "__main__":
     from time import time
     start = time()
     net = RedditNetwork("config_test.json")
-    net.export_network("test.html")
-    save_pos("test.html")
+    net.export_network(net.config["output_path"])
+    save_pos(net.config["output_path"])
     print("Took",round((time()-start)/60,1),"min")
