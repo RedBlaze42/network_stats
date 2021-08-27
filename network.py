@@ -108,10 +108,12 @@ class RedditNetwork():
         print("Relations...")
         cache_path = self.get_cache_file()
         if cache_path is not None: #If a relation map is found with the same settings, load it
+            with open(cache_path.replace(".ndjson", "_sublist.json"), "r") as f: line_count = json.load(f)["relation_number"]
+            
             with open(cache_path, "r") as f:
                 self._relations = dict()
                 reader = ndjson.reader(f)
-                for key, value in tqdm(reader, mininterval = 0.5, unit_scale = True):
+                for key, value in tqdm(reader, total = line_count, mininterval = 0.5, unit_scale = True):
                     if key[0] in self.top_subs_ids and key[1] in self.top_subs_ids:
                         self._relations[key[0], key[1]] = value
         else:
@@ -135,7 +137,7 @@ class RedditNetwork():
         cache_path = join(self.input_path,"cache_{:03d}.ndjson".format(cache_number))
 
         with open(join(self.input_path, "cache_{:03d}_sublist.json".format(cache_number)), "w") as f:
-            json.dump(list(self.top_subs_ids), f)
+            json.dump({"subs":list(self.top_subs_ids),"relation_number": len(self.relations)}, f)
 
         with open(cache_path,"w") as f:
             writer = ndjson.writer(f, ensure_ascii=False)
@@ -146,7 +148,7 @@ class RedditNetwork():
     def get_cache_file(self):
         cache_list = glob.glob(join(self.input_path, "cache_*_sublist.json"))
         for cache in cache_list:
-            with open(cache, "r") as f: cache_sub_list = set(json.load(f))
+            with open(cache, "r") as f: cache_sub_list = set(json.load(f)["subs"])
 
             if not any(element not in cache_sub_list for element in self.top_subs_ids):
                 return cache.replace("_sublist.json", ".ndjson")
