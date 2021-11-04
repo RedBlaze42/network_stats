@@ -332,7 +332,7 @@ class RedditNetwork():
 
             top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
 
-            for node in top_connected_nodes.keys():
+            for node, _ in top_connected_nodes:
                 if len(self.primary_nodes) == len(self.top_colors): break
 
                 connected_to_top_node = False
