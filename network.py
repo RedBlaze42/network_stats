@@ -230,7 +230,7 @@ class RedditNetwork():
 
         print("Edge filtering {:,} edges...".format(len(self.relations)))
         self._top_edges = dict()
-        progress_bar = tqdm(total = len(self.top_subs_ids)**2, mininterval = 0.5, unit_scale = True)
+        progress_bar = tqdm(total = len(self.relations)*2, mininterval = 0.5, unit_scale = True)
         for sub_1 in self.top_subs_ids:
             node_relations=dict()
             for sub_2 in self.top_subs_ids:
