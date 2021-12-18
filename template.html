@@ -294,7 +294,7 @@
          function move(){
              node = document.getElementById("node_name").value;
              position = network.getPositions([node])[node];
-             network.moveTo({position:position,scale: 20});
+             network.focus(node, {scale:10});
          }
  
          function open_menu(){
