@@ -113,10 +113,12 @@ class RedditNetwork():
         print("Relations...")
         cache_path = self.get_cache_file()
         if cache_path is not None: #If a relation map is found with the same settings, load it
+            with open(cache_path.replace(".ndjson", "_sublist.json"), "r") as f: line_count = json.load(f)["relation_number"]
+            
             with open(cache_path, "r") as f:
                 self._relations = dict()
                 reader = ndjson.reader(f)
-                for key, value in tqdm(reader, mininterval = 0.5, unit_scale = True):
+                for key, value in tqdm(reader, total = line_count, mininterval = 0.5, unit_scale = True):
                     if key[0] in self.top_subs_ids and key[1] in self.top_subs_ids:
                         self._relations[key[0], key[1]] = value
         else:
@@ -140,7 +142,7 @@ class RedditNetwork():
         cache_path = join(self.input_path,"cache_{:03d}.ndjson".format(cache_number))
 
         with open(join(self.input_path, "cache_{:03d}_sublist.json".format(cache_number)), "w") as f:
-            json.dump(list(self.top_subs_ids), f)
+            json.dump({"subs":list(self.top_subs_ids),"relation_number": len(self.relations)}, f)
 
         with open(cache_path,"w") as f:
             writer = ndjson.writer(f, ensure_ascii=False)
@@ -151,7 +153,7 @@ class RedditNetwork():
     def get_cache_file(self):
         cache_list = glob.glob(join(self.input_path, "cache_*_sublist.json"))
         for cache in cache_list:
-            with open(cache, "r") as f: cache_sub_list = set(json.load(f))
+            with open(cache, "r") as f: cache_sub_list = set(json.load(f)["subs"])
 
             if not any(element not in cache_sub_list for element in self.top_subs_ids):
                 return cache.replace("_sublist.json", ".ndjson")
@@ -172,7 +174,7 @@ class RedditNetwork():
             for author in authors:
                 progress_bar.update(1)
                 author_name, author_data = list(author.items())[0]
-                if len(author_data) > 3000: continue #Ignore les auteurs avec un commentaires dans plus de 3000 sub différents (souvent des bots)
+                if len(author_data) <= 1 or len(author_data) > 3000: continue #Ignore les auteurs avec un commentaires dans plus de 3000 sub différents (souvent des bots)
                 
                 if author_name in self.blacklisted_authors: continue
                 
@@ -233,13 +235,13 @@ class RedditNetwork():
 
         print("Edge filtering {:,} edges...".format(len(self.relations)))
         self._top_edges = dict()
-        progress_bar = tqdm(total = len(self.relations), mininterval = 0.5, unit_scale = True)
+        progress_bar = tqdm(total = len(self.relations)*2, mininterval = 0.5, unit_scale = True)
         for sub_1 in self.top_subs_ids:
             node_relations=dict()
             for sub_2 in self.top_subs_ids:
+                progress_bar.update(1)
                 if sub_1 == sub_2: continue
                 if (min(sub_1, sub_2), max(sub_1, sub_2)) not in self.relations.keys(): continue
-                progress_bar.update(1)
                 node_relations[sub_2] = self.relations[min(sub_1, sub_2), max(sub_1, sub_2)]
             
             top_node_relation = sorted(node_relations.keys(), key = lambda x: node_relations[x], reverse = True)[:self.connections_number]
@@ -335,7 +337,7 @@ class RedditNetwork():
 
             top_connected_nodes = sorted(top_connected_nodes.items(), key = lambda x: x[1], reverse = True)
 
-            for node in top_connected_nodes.keys():
+            for node, _ in top_connected_nodes:
                 if len(self.primary_nodes) == len(self.top_colors): break
 
                 connected_to_top_node = False
@@ -402,6 +404,6 @@ if __name__ == "__main__":
     from time import time
     start = time()
     net = RedditNetwork("config_test.json")
-    net.export_network("test.html")
-    save_pos("test.html")
+    net.export_network(net.config["output_path"])
+    save_pos(net.config["output_path"])
     print("Took",round((time()-start)/60,1),"min")

@@ -127,7 +127,7 @@
  
       <div style="position: absolute; top: 0; left: 0;" id="find_node_button">
          <input id="node_name" type="text">
-         <button onclick="move();">Find subreddit</button>
+         <button onclick="move();">Find node</button>
          <button onclick="close_menu();">Close menu</button>
       </div>
 
@@ -294,7 +294,7 @@
          function move(){
              node = document.getElementById("node_name").value;
              position = network.getPositions([node])[node];
-             network.moveTo({position:position,scale: 20});
+             network.focus(node, {scale:10});
          }
  
          function open_menu(){
